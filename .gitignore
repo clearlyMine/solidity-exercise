@@ -2,6 +2,11 @@
 cache/
 out/
 
+# node
+node_modules
+pnpm-lock.yaml
+package-lock.json
+
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
@@ -9,3 +14,4 @@ out/
 
 # Dotenv file
 .env
+
