@@ -50,6 +50,16 @@ contract Game is Ownable {
         });
     }
 
+    function makeNewBoss(string calldata _name) external onlyOwner {
+        current_boss = Character({
+            name: _name,
+            power_left: _getRandomPower(),
+            experience: 0,
+            created: true,
+            dead: false
+        });
+    }
+
     function addToCharacterNamesList(string calldata _newName)
         external
         onlyOwner
