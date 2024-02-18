@@ -50,16 +50,7 @@ contract GameTest is Test {
 
   function testUnableToCreateCharacterIfItsAlive() public {
     vm.roll(50);
-    uint256 _power = uint256(
-      keccak256(
-        abi.encodePacked(
-          blockhash(20),
-          block.timestamp,
-          address(1),
-          block.prevrandao
-        )
-      )
-    );
+    uint256 _power = uint256(keccak256(abi.encodePacked(blockhash(20), block.timestamp, address(1), block.prevrandao)));
 
     uint256 _nameIndex = _power % characterNames.length;
     Game.Character memory _newChar =
