@@ -64,6 +64,8 @@ contract GameTest is Test {
     //create character
     vm.startPrank(address(1));
     game.createNewCharacter();
+    vm.roll(53);
+
     Game.Character memory _char =
       Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
 
@@ -88,6 +90,7 @@ contract GameTest is Test {
     //create character
     vm.startPrank(address(1));
     game.createNewCharacter();
+    vm.roll(53);
     Game.Character memory _char =
       Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
 
@@ -97,7 +100,7 @@ contract GameTest is Test {
     game.attackBoss();
 
     //re-attack boss
-    vm.roll(53);
+    vm.roll(54);
     _char = Game.Character({name: "Joy", powerLeft: 157_224_577_265_927_932, experience: 0, created: true, dead: false});
     vm.expectEmit();
     emit Game.BossAttacked(_char);
@@ -173,15 +176,124 @@ contract GameTest is Test {
     //create character
     vm.startPrank(address(1));
     game.createNewCharacter();
+    vm.roll(53);
+
     Game.Character memory _char =
       Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
-
     //attack boss
     vm.expectEmit();
     emit Game.BossAttacked(_char);
     game.attackBoss();
 
-    vm.expectRevert(Game.CharacterAlreadyWorking.selector);
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(1)));
     game.attackBoss();
   }
+
+  function _healingSetUp() public returns (Game.Character memory _char) {
+    vm.startPrank(address(1));
+    game.createNewCharacter();
+    _char = Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
+    vm.stopPrank();
+    vm.roll(51);
+  }
+
+  function testCanHealOthers() public {
+    // _healingSetUp();
+    // vm.startPran
+  }
+
+  function testCannotHealOneself() public {
+    vm.startPrank(address(1));
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterCannotHealOneself.selector, address(1)));
+    game.healCharacter(address(1), 1);
+  }
+
+  function testCannotHealWithZeroPoints() public {
+    vm.startPrank(address(1));
+    vm.expectRevert(abi.encodeWithSelector(Game.InvalidInput.selector));
+    game.healCharacter(address(2), 0);
+  }
+
+  function testCannotHealWhenUninitialized() public {
+    _healingSetUp();
+    vm.startPrank(address(2));
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterNotCreated.selector, address(2)));
+    game.healCharacter(address(1), 1);
+  }
+
+  function testCannotHealWhenDead() public {
+    //create boss
+    game.makeNewBossWithRandomPowers("gujju");
+    vm.roll(52);
+    vm.startPrank(address(2));
+    game.createNewCharacter();
+    vm.stopPrank();
+
+    //create character
+    vm.startPrank(address(1));
+    game.createNewCharacter();
+
+    vm.roll(53);
+    //attack boss
+    game.attackBoss();
+
+    //re-attack boss-character will die here
+    vm.roll(54);
+    game.attackBoss();
+
+    vm.roll(55);
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterIsDead.selector, address(1)));
+    game.healCharacter(address(2), 1);
+  }
+
+  // TODO implement after user story #6
+  function testCannotHealWhenWorking() public {
+    // _healingSetUp();
+    // vm.startPrank(address(2));
+    // game.createNewCharacter();
+    // vm.stopPrank();
+    //
+    // vm.roll(52);
+    // vm.startPrank(address(1));
+    // vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector,address(1)));
+    // game.healCharacter(address(2), 1);
+    // vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector,address(1)));
+    // game.healCharacter(address(2), 1);
+    // vm.stopPrank();
+  }
+
+  function testCannotHealWhenOtherUninitialized() public {
+    vm.startPrank(address(1));
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterNotCreated.selector, address(2)));
+    game.healCharacter(address(2), 1);
+  }
+
+  // TODO implement after user story #6
+  function testCannotHealWhenOtherWorking() public {
+    // vm.startPrank(address(3));
+    // game.createNewCharacter();
+    // vm.stopPrank();
+    //
+    // vm.startPrank(address(2));
+    // game.createNewCharacter();
+    // vm.roll(51);
+    // vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector,address(2)));
+    // game.healCharacter(address(3),1);
+    // vm.stopPrank();
+  }
+
+  function testCannotHealWithNoExperience() public {
+    _healingSetUp();
+
+    vm.startPrank(address(2));
+    game.createNewCharacter();
+    vm.roll(52);
+
+    vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector, address(2)));
+    game.healCharacter(address(1), 1);
+    vm.stopPrank();
+  }
+
+  // TODO implement after user story #6
+  function testCannotHealWithLessExperience() public {}
 }

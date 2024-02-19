@@ -21,9 +21,15 @@ contract Game is Ownable {
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
 
+  error InvalidInput();
+
   error CharacterAlreadyCreated();
+  error CharacterAlreadyWorking(address);
   error CharacterNotCreated(address);
-  error CharacterAlreadyWorking();
+  error CharacterIsDead(address);
+  error CharacterCannotHealOneself(address);
+  error NotEnoughExperience(address);
+
   // "Boss is still alive"
   error BossNotDead();
   error BossNotCreated();
@@ -96,6 +102,7 @@ contract Game is Ownable {
       Character({name: characterNames[_nameIndex], powerLeft: _power, experience: 0, created: true, dead: false});
     characters[msg.sender] = _newChar;
     activePlayers.push(msg.sender);
+    working[msg.sender] = block.number;
     emit NewCharacterCreated(msg.sender, _newChar);
   }
 
@@ -107,17 +114,27 @@ contract Game is Ownable {
     return ch;
   }
 
+  function _checkIfCharacterIsAvailableToWork(Character memory _toCheck) internal view {
+    _revertOnCharacterNotCreated(_toCheck);
+    if (_toCheck.dead) {
+      revert CharacterIsDead(msg.sender);
+    }
+    if (working[msg.sender] >= block.number) {
+      revert CharacterAlreadyWorking(msg.sender);
+    }
+  }
+
+  function _revertOnCharacterNotCreated(Character memory _toCheck) internal view {
+    if (!_toCheck.created) {
+      revert CharacterNotCreated(msg.sender);
+    }
+  }
+
   function attackBoss() external {
     _revertOnUninitializedBoss();
     _revertOnDeadBoss();
     Character storage _uChar = characters[msg.sender];
-    if (!_uChar.created) {
-      revert CharacterNotCreated(msg.sender);
-    }
-    if (working[msg.sender] >= block.number) {
-      revert CharacterAlreadyWorking();
-    }
-
+    _checkIfCharacterIsAvailableToWork(_uChar);
     emit BossAttacked(_uChar);
     working[msg.sender] = block.number;
     uint64 charP = _uChar.powerLeft;
@@ -140,6 +157,31 @@ contract Game is Ownable {
     if (currentBoss.dead) {
       _makeNewRandomBoss();
     }
+  }
+
+  function healCharacter(address adr, uint128 points) external {
+    if (adr == msg.sender) {
+      revert CharacterCannotHealOneself(msg.sender);
+    }
+    if (points == 0) {
+      revert InvalidInput();
+    }
+
+    Character storage _toHeal = characters[adr];
+    if (!_toHeal.created) {
+      revert CharacterNotCreated(adr);
+    }
+    if (working[adr] >= block.number) {
+      revert CharacterAlreadyWorking(adr);
+    }
+    Character storage _ownCharacter = characters[msg.sender];
+    _checkIfCharacterIsAvailableToWork(_ownCharacter);
+    if (_ownCharacter.experience < points) {
+      revert NotEnoughExperience(msg.sender);
+    }
+    working[msg.sender] = block.number;
+    _ownCharacter.experience -= points;
+    _toHeal.powerLeft += uint64(points);
   }
 
   function _getRandomPower() internal view returns (uint64) {
