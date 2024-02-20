@@ -23,7 +23,7 @@ contract Game is Ownable {
 
   error InvalidInput();
 
-  error CharacterAlreadyCreated();
+  error CharacterAlreadyCreated(address);
   error CharacterAlreadyWorking(address);
   error CharacterNotCreated(address);
   error CharacterIsDead(address);
@@ -100,7 +100,7 @@ contract Game is Ownable {
 
   function createNewCharacter() external {
     if (characters[msg.sender].created) {
-      revert CharacterAlreadyCreated();
+      revert CharacterAlreadyCreated(msg.sender);
     }
     uint64 _power = _getRandomPower();
     uint256 _nameIndex = _power % characterNames.length;
