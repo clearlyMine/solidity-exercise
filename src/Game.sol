@@ -43,9 +43,12 @@ contract Game is Ownable {
 
   constructor() Ownable(msg.sender) {}
 
-  function makeNewBoss(string memory _name, uint64 _totalPower) public onlyOwner {
-    _revertOnAliveBoss();
+  function makeNewBoss(string memory _name, uint64 _totalPower) external onlyOwner {
+    _makeNewBoss(_name, _totalPower);
+  }
 
+  function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
+    _revertOnAliveBoss();
     currentBoss = Character({name: _name, powerLeft: _totalPower, experience: 0, created: true, dead: false});
     emit NewBossCreated(currentBoss);
   }
@@ -57,14 +60,17 @@ contract Game is Ownable {
 
   function _makeNewBossWithRandomPowers(string calldata _name) internal {
     _revertOnAliveBoss();
-    makeNewBoss(_name, _getRandomPower() * 10);
+    _makeNewBoss(_name, _getRandomPower() * 10);
   }
 
+  function makeNewRandomBoss() external onlyOwner {
+    _makeNewRandomBoss();
+  }
   function _makeNewRandomBoss() internal {
     _revertOnAliveBoss();
     uint64 _pow = _getRandomPower() * 10;
     string memory _name = characterNames[_pow % characterNames.length];
-    makeNewBoss(_name, _pow);
+    _makeNewBoss(_name, _pow);
   }
 
   function _revertOnUninitializedBoss() internal view {
