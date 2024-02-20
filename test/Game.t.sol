@@ -9,8 +9,8 @@ contract GameTest is Test {
   Game public game;
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
-  Game.Character  _gujjuBoss =
-      Game.Character({name: "gujju", powerLeft: 18_417_920_234_273_413_000, experience: 0, created: true, dead: false});
+  Game.Character private _gujjuBoss =
+    Game.Character({name: "gujju", powerLeft: 18_417_920_234_273_413_000, experience: 0, created: true, dead: false});
 
   function setUp() public {
     game = new Game();
@@ -71,7 +71,7 @@ contract GameTest is Test {
 
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_gujjuBoss,_char,address(1));
+    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
@@ -249,8 +249,25 @@ contract GameTest is Test {
   }
 
   function testCanHealOthers() public {
-    // _healingSetUp();
-    // vm.startPran
+    game.makeNewBossWithRandomPowers("gujju");
+    vm.roll(52);
+    vm.startPrank(address(1));
+    game.createNewCharacter();
+    vm.stopPrank();
+    vm.startPrank(address(2));
+    game.createNewCharacter();
+    vm.stopPrank();
+
+    vm.roll(53);
+
+    vm.startPrank(address(1));
+    game.attackBoss();
+    vm.roll(54);
+
+    game.healCharacter(address(2), 3);
+    vm.stopPrank();
+
+    assert(game.getUsersCharacter(address(2)).powerLeft > 0);
   }
 
   function testCannotHealOneself() public {
