@@ -39,7 +39,8 @@ contract Game is Ownable {
 
   event NewCharacterCreated(address indexed creator, Character character);
   event NewBossCreated(Character boss);
-  event BossAttacked(Character attacker);
+  event BossAttacked(Character boss, Character attacker, address indexed user);
+  event BossKilled(address indexed);
 
   constructor() Ownable(msg.sender) {}
 
@@ -143,6 +144,7 @@ contract Game is Ownable {
     _checkIfCharacterIsAvailableToWork(_uChar);
     emit BossAttacked(_uChar);
     working[msg.sender] = block.number;
+    emit BossAttacked(currentBoss, _uChar, msg.sender);
     uint64 charP = _uChar.powerLeft;
     uint64 bP = currentBoss.powerLeft;
 
@@ -161,6 +163,7 @@ contract Game is Ownable {
     }
 
     if (currentBoss.dead) {
+      emit BossKilled(msg.sender);
       _makeNewRandomBoss();
     }
   }
