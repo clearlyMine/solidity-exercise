@@ -151,8 +151,10 @@ contract Game is Ownable {
     if (bP <= charP) {
       currentBoss.powerLeft = 0;
       currentBoss.dead = true;
+      _uChar.experience += bP / 100;
     } else {
       currentBoss.powerLeft -= charP;
+      _uChar.experience += charP / 100;
     }
     bP /= 100;
     if (charP <= bP) {
