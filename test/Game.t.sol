@@ -9,6 +9,8 @@ contract GameTest is Test {
   Game public game;
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
+  Game.Character  _gujjuBoss =
+      Game.Character({name: "gujju", powerLeft: 18_417_920_234_273_413_000, experience: 0, created: true, dead: false});
 
   function setUp() public {
     game = new Game();
@@ -44,7 +46,7 @@ contract GameTest is Test {
     vm.startPrank(address(1));
     game.createNewCharacter();
 
-    vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyCreated.selector));
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyCreated.selector, address(1)));
     game.createNewCharacter();
     vm.stopPrank();
   }
@@ -57,8 +59,6 @@ contract GameTest is Test {
   function testCanAttackBoss() public {
     //create boss
     game.makeNewBossWithRandomPowers("gujju");
-    Game.Character memory _boss =
-      Game.Character({name: "gujju", powerLeft: 18_417_920_234_273_413_000, experience: 0, created: true, dead: false});
     vm.roll(52);
 
     //create character
@@ -71,15 +71,58 @@ contract GameTest is Test {
 
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_char);
+    emit Game.BossAttacked(_gujjuBoss,_char,address(1));
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
     (, uint256 bossPowerLeft,,, bool bossDead) = game.currentBoss();
-    assertEq(bossPowerLeft, _boss.powerLeft - _char.powerLeft);
+    assertEq(bossPowerLeft, _gujjuBoss.powerLeft - _char.powerLeft);
     assert(!bossDead);
-    assertEq(_newChar.powerLeft, _char.powerLeft - _boss.powerLeft / 100);
+    assertEq(_newChar.powerLeft, _char.powerLeft - _gujjuBoss.powerLeft / 100);
     assert(!_newChar.dead);
+  }
+
+  // Takes 20 addresses to kill boss
+  function _killBoss() public returns (uint160) {
+    game.makeNewRandomBoss();
+    // (, uint256 bossPowerLeft,,,) = game.currentBoss();
+    // uint160 player_index = 0;
+    // uint256 currentTotal = 0;
+    for (uint160 i = 1; i <= 20; i++) {
+      // while (currentTotal < bossPowerLeft) {
+      // vm.startPrank(address(++player_index));
+      vm.startPrank(address(i));
+      game.createNewCharacter();
+      vm.stopPrank();
+      // currentTotal += game.getUsersCharacter(address(player_index)).powerLeft;
+    }
+    vm.roll(52);
+    // for (uint160 i = 1; i <= player_index; i++) {
+    for (uint160 i = 1; i <= 20; i++) {
+      vm.startPrank(address(i));
+      game.attackBoss();
+      vm.stopPrank();
+    }
+    // return player_index;
+    return 20;
+  }
+
+  function testKillingBossGivesReward() public {
+    _killBoss();
+    vm.roll(54);
+    assertEq(game.canClaimReward(address(20)), 2);
+  }
+
+  function testCanClaimReward() public {
+    _killBoss();
+    vm.roll(53);
+    //get experience prior to claiming reward
+    Game.Character memory _char = game.getUsersCharacter(address(20));
+    vm.startPrank(address(20));
+    game.claimReward();
+    Game.Character memory _char2 = game.getUsersCharacter(address(20));
+
+    assertGt(_char2.experience, _char.experience);
   }
 
   function testCanAttackBossInSubsequentBlocks() public {
@@ -96,14 +139,22 @@ contract GameTest is Test {
 
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_char);
+    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
     game.attackBoss();
 
     //re-attack boss
     vm.roll(54);
-    _char = Game.Character({name: "Joy", powerLeft: 157_224_577_265_927_932, experience: 0, created: true, dead: false});
+    Game.Character memory _boss =
+      Game.Character({name: "gujju", powerLeft: 18_076_516_454_664_750_938, experience: 0, created: true, dead: false});
+    _char = Game.Character({
+      name: "Joy",
+      powerLeft: 157_224_577_265_927_932,
+      experience: 3_414_037_796_086_620,
+      created: true,
+      dead: false
+    });
     vm.expectEmit();
-    emit Game.BossAttacked(_char);
+    emit Game.BossAttacked(_boss, _char, address(1));
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
@@ -182,7 +233,7 @@ contract GameTest is Test {
       Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_char);
+    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
     game.attackBoss();
 
     vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(1)));
@@ -246,20 +297,27 @@ contract GameTest is Test {
     game.healCharacter(address(2), 1);
   }
 
-  // TODO implement after user story #6
   function testCannotHealWhenWorking() public {
-    // _healingSetUp();
-    // vm.startPrank(address(2));
-    // game.createNewCharacter();
-    // vm.stopPrank();
-    //
-    // vm.roll(52);
-    // vm.startPrank(address(1));
-    // vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector,address(1)));
-    // game.healCharacter(address(2), 1);
-    // vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector,address(1)));
-    // game.healCharacter(address(2), 1);
-    // vm.stopPrank();
+    game.makeNewBossWithRandomPowers("gujju");
+    _healingSetUp();
+    vm.startPrank(address(2));
+    game.createNewCharacter();
+    vm.stopPrank();
+
+    vm.startPrank(address(3));
+    game.createNewCharacter();
+    vm.stopPrank();
+
+    vm.roll(52);
+    vm.startPrank(address(1));
+    game.attackBoss();
+
+    vm.roll(53);
+
+    game.healCharacter(address(2), 1);
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(1)));
+    game.healCharacter(address(3), 1);
+    vm.stopPrank();
   }
 
   function testCannotHealWhenOtherUninitialized() public {
@@ -268,18 +326,22 @@ contract GameTest is Test {
     game.healCharacter(address(2), 1);
   }
 
-  // TODO implement after user story #6
   function testCannotHealWhenOtherWorking() public {
-    // vm.startPrank(address(3));
-    // game.createNewCharacter();
-    // vm.stopPrank();
-    //
-    // vm.startPrank(address(2));
-    // game.createNewCharacter();
-    // vm.roll(51);
-    // vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector,address(2)));
-    // game.healCharacter(address(3),1);
-    // vm.stopPrank();
+    game.makeNewRandomBoss();
+    vm.startPrank(address(3));
+    game.createNewCharacter();
+    vm.stopPrank();
+
+    vm.startPrank(address(2));
+    game.createNewCharacter();
+    vm.roll(51);
+    game.attackBoss();
+    vm.stopPrank();
+
+    vm.startPrank(address(1));
+    vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(2)));
+    game.healCharacter(address(2), 1);
+    vm.stopPrank();
   }
 
   function testCannotHealWithNoExperience() public {
@@ -294,6 +356,21 @@ contract GameTest is Test {
     vm.stopPrank();
   }
 
-  // TODO implement after user story #6
-  function testCannotHealWithLessExperience() public {}
+  function testCannotHealWithLessExperience() public {
+    game.makeNewRandomBoss();
+    _healingSetUp();
+
+    vm.startPrank(address(2));
+    game.createNewCharacter();
+    vm.roll(52);
+
+    vm.stopPrank();
+
+    vm.startPrank(address(1));
+    game.attackBoss();
+    vm.roll(53);
+    vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector, address(1)));
+    game.healCharacter(address(2), 1_730_191_093_711_958_967 + 1);
+    vm.stopPrank();
+  }
 }
