@@ -81,7 +81,7 @@ contract Game is Ownable {
   }
 
   function _revertOnAliveBoss() internal view {
-    if (currentBoss.created && !currentBoss.dead && currentBoss.powerLeft != uint256(0)) {
+    if (currentBoss.created && !currentBoss.dead && currentBoss.powerLeft > uint256(0)) {
       revert BossNotDead();
     }
   }
