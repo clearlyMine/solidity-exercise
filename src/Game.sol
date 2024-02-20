@@ -13,13 +13,18 @@ contract Game is Ownable {
     bool dead;
   }
 
+  uint8 internal constant FALSE = 1;
+  uint8 internal constant TRUE = 2;
   Character public currentBoss;
   mapping(address userAddress => Character usersCharacter) public characters;
   mapping(address userAddress => uint256 blockNumber) private working;
+  mapping(address addr => uint8 bBool) public canClaimReward;
   address[] public activePlayers;
 
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
+
+  error CannotClaimReward(address);
 
   error InvalidInput();
 
@@ -41,6 +46,7 @@ contract Game is Ownable {
   event NewBossCreated(Character boss);
   event BossAttacked(Character boss, Character attacker, address indexed user);
   event BossKilled(address indexed);
+  event CanClaimReward(address indexed);
 
   constructor() Ownable(msg.sender) {}
 
@@ -67,6 +73,7 @@ contract Game is Ownable {
   function makeNewRandomBoss() external onlyOwner {
     _makeNewRandomBoss();
   }
+
   function _makeNewRandomBoss() internal {
     _revertOnAliveBoss();
     uint64 _pow = _getRandomPower() * 10;
@@ -142,7 +149,6 @@ contract Game is Ownable {
     _revertOnDeadBoss();
     Character storage _uChar = characters[msg.sender];
     _checkIfCharacterIsAvailableToWork(_uChar);
-    emit BossAttacked(_uChar);
     working[msg.sender] = block.number;
     emit BossAttacked(currentBoss, _uChar, msg.sender);
     uint64 charP = _uChar.powerLeft;
@@ -166,8 +172,23 @@ contract Game is Ownable {
 
     if (currentBoss.dead) {
       emit BossKilled(msg.sender);
+      emit CanClaimReward(msg.sender);
       _makeNewRandomBoss();
+      canClaimReward[msg.sender] = TRUE;
     }
+  }
+
+  //Currently gives experience as reward after killing a boss
+  function claimReward() external {
+    Character storage _char = characters[msg.sender];
+    _checkIfCharacterIsAvailableToWork(_char);
+    working[msg.sender] = block.number;
+    uint8 x = canClaimReward[msg.sender];
+    if (x == FALSE || x == 0) {
+      revert CannotClaimReward(msg.sender);
+    }
+    canClaimReward[msg.sender] = FALSE;
+    _char.experience += _getRandomPower();
   }
 
   function healCharacter(address adr, uint128 points) external {
