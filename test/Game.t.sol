@@ -9,8 +9,14 @@ contract GameTest is Test {
   Game public game;
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
-  Game.Character private _gujjuBoss =
-    Game.Character({name: "gujju", powerLeft: 18_417_920_234_273_413_000, experience: 0, created: true, dead: false});
+  Game.Character private _gujjuBoss = Game.Character({
+    name: "gujju",
+    maxPower: 18_417_920_234_273_413_000,
+    damage: 0,
+    experience: 0,
+    created: true,
+    dead: false
+  });
 
   function setUp() public {
     game = new Game();
@@ -30,7 +36,8 @@ contract GameTest is Test {
   function testNewCharacterCreation() public {
     Game.Character memory _newChar = Game.Character({
       name: "Superman",
-      powerLeft: 1_730_191_093_711_958_967,
+      maxPower: 1_730_191_093_711_958_967,
+      damage: 0,
       experience: 0,
       created: true,
       dead: false
@@ -66,8 +73,14 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char =
-      Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Joy",
+      maxPower: 341_403_779_608_662_062,
+      damage: 0,
+      experience: 0,
+      created: true,
+      dead: false
+    });
 
     //attack boss
     vm.expectEmit();
@@ -75,11 +88,39 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (, uint256 bossPowerLeft,,, bool bossDead) = game.currentBoss();
-    assertEq(bossPowerLeft, _gujjuBoss.powerLeft - _char.powerLeft);
+    (,, uint256 bossDamage,,, bool bossDead) = game.currentBoss();
+
+    assertEq(bossDamage, _char.maxPower);
     assert(!bossDead);
-    assertEq(_newChar.powerLeft, _char.powerLeft - _gujjuBoss.powerLeft / 100);
+    assertEq(_newChar.damage, _gujjuBoss.maxPower / 100);
     assert(!_newChar.dead);
+  }
+
+  function testAttackingBossGivesExperience() public {
+    //create boss
+    game.makeNewBossWithRandomPowers("gujju");
+    vm.roll(52);
+
+    //create character
+    vm.startPrank(address(1));
+    game.createNewCharacter();
+    vm.roll(53);
+
+    Game.Character memory _char = Game.Character({
+      name: "Joy",
+      maxPower: 341_403_779_608_662_062,
+      damage: 0,
+      experience: 0,
+      created: true,
+      dead: false
+    });
+
+    //attack boss
+    vm.expectEmit();
+    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
+    game.attackBoss();
+    Game.Character memory _newChar1 = game.getUsersCharacter(address(1));
+    assertEq(_newChar1.experience, 3_414_037_796_086_620);
   }
 
   // Takes 20 addresses to kill boss
@@ -134,8 +175,14 @@ contract GameTest is Test {
     vm.startPrank(address(1));
     game.createNewCharacter();
     vm.roll(53);
-    Game.Character memory _char =
-      Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Joy",
+      maxPower: 341_403_779_608_662_062,
+      damage: 0,
+      experience: 0,
+      created: true,
+      dead: false
+    });
 
     //attack boss
     vm.expectEmit();
@@ -144,11 +191,18 @@ contract GameTest is Test {
 
     //re-attack boss
     vm.roll(54);
-    Game.Character memory _boss =
-      Game.Character({name: "gujju", powerLeft: 18_076_516_454_664_750_938, experience: 0, created: true, dead: false});
+    Game.Character memory _boss = Game.Character({
+      name: "gujju",
+      maxPower: 18_417_920_234_273_413_000,
+      damage: 341_403_779_608_662_062,
+      experience: 0,
+      created: true,
+      dead: false
+    });
     _char = Game.Character({
       name: "Joy",
-      powerLeft: 157_224_577_265_927_932,
+      maxPower: 341_403_779_608_662_062,
+      damage: 184_179_202_342_734_130,
       experience: 3_414_037_796_086_620,
       created: true,
       dead: false
@@ -158,10 +212,10 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (, uint256 bossPowerLeft,,, bool bossDead) = game.currentBoss();
-    assertEq(bossPowerLeft, 17_919_291_877_398_823_006);
+    (, uint256 bossMaxPower, uint256 bossDamage,,, bool bossDead) = game.currentBoss();
+    assertEq(bossMaxPower - bossDamage, 17_919_291_877_398_823_006);
     assert(!bossDead);
-    assertEq(_newChar.powerLeft, 0);
+    assertEq(_newChar.maxPower, _newChar.damage);
     assert(_newChar.dead);
   }
 
@@ -229,8 +283,14 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char =
-      Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Joy",
+      maxPower: 341_403_779_608_662_062,
+      damage: 0,
+      experience: 0,
+      created: true,
+      dead: false
+    });
     //attack boss
     vm.expectEmit();
     emit Game.BossAttacked(_gujjuBoss, _char, address(1));
@@ -243,7 +303,14 @@ contract GameTest is Test {
   function _healingSetUp() public returns (Game.Character memory _char) {
     vm.startPrank(address(1));
     game.createNewCharacter();
-    _char = Game.Character({name: "Joy", powerLeft: 341_403_779_608_662_062, experience: 0, created: true, dead: false});
+    _char = Game.Character({
+      name: "Joy",
+      maxPower: 341_403_779_608_662_062,
+      damage: 0,
+      experience: 0,
+      created: true,
+      dead: false
+    });
     vm.stopPrank();
     vm.roll(51);
   }
@@ -262,12 +329,19 @@ contract GameTest is Test {
 
     vm.startPrank(address(1));
     game.attackBoss();
+    vm.stopPrank();
+    vm.startPrank(address(2));
+    game.attackBoss();
+    vm.stopPrank();
     vm.roll(54);
 
+    uint64 u2Damage = game.getUsersCharacter(address(2)).damage;
+
+    vm.startPrank(address(1));
     game.healCharacter(address(2), 3);
     vm.stopPrank();
 
-    assert(game.getUsersCharacter(address(2)).powerLeft > 0);
+    assertEq(game.getUsersCharacter(address(2)).damage, u2Damage - 3);
   }
 
   function testCannotHealOneself() public {
@@ -328,8 +402,15 @@ contract GameTest is Test {
     vm.roll(52);
     vm.startPrank(address(1));
     game.attackBoss();
+    vm.stopPrank();
+
+    vm.startPrank(address(2));
+    game.attackBoss();
+    vm.stopPrank();
 
     vm.roll(53);
+
+    vm.startPrank(address(1));
 
     game.healCharacter(address(2), 1);
     vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(1)));

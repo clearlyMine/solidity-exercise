@@ -7,7 +7,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract Game is Ownable {
   struct Character {
     string name;
-    uint64 powerLeft;
+    uint64 maxPower;
+    uint64 damage;
     uint128 experience;
     bool created;
     bool dead;
@@ -31,6 +32,7 @@ contract Game is Ownable {
   error CharacterAlreadyCreated(address);
   error CharacterAlreadyWorking(address);
   error CharacterNotCreated(address);
+  error CharacterNotDamaged(address);
   error CharacterIsDead(address);
   error CharacterCannotHealOneself(address);
   error NotEnoughExperience(address);
@@ -56,7 +58,7 @@ contract Game is Ownable {
 
   function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
     _revertOnAliveBoss();
-    currentBoss = Character({name: _name, powerLeft: _totalPower, experience: 0, created: true, dead: false});
+    currentBoss = Character({name: _name, maxPower: _totalPower, damage: 0, experience: 0, created: true, dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -88,13 +90,13 @@ contract Game is Ownable {
   }
 
   function _revertOnAliveBoss() internal view {
-    if (currentBoss.created && !currentBoss.dead && currentBoss.powerLeft > uint256(0)) {
+    if (currentBoss.created && !currentBoss.dead && currentBoss.maxPower > currentBoss.damage) {
       revert BossNotDead();
     }
   }
 
   function _revertOnDeadBoss() internal view {
-    if (currentBoss.dead || currentBoss.powerLeft == uint256(0)) {
+    if (currentBoss.dead || currentBoss.maxPower == currentBoss.damage) {
       revert BossIsDead();
     }
   }
@@ -112,8 +114,14 @@ contract Game is Ownable {
     }
     uint64 _power = _getRandomPower();
     uint256 _nameIndex = _power % characterNames.length;
-    Character memory _newChar =
-      Character({name: characterNames[_nameIndex], powerLeft: _power, experience: 0, created: true, dead: false});
+    Character memory _newChar = Character({
+      name: characterNames[_nameIndex],
+      maxPower: _power,
+      damage: 0,
+      experience: 0,
+      created: true,
+      dead: false
+    });
     characters[msg.sender] = _newChar;
     activePlayers.push(msg.sender);
     working[msg.sender] = block.number;
@@ -128,12 +136,12 @@ contract Game is Ownable {
     return ch;
   }
 
-  function _checkIfCharacterIsAvailableToWork(Character memory _toCheck) internal view {
+  function _checkIfCharacterIsAvailableToWork(Character memory _toCheck, address adr) internal view {
     _revertOnCharacterNotCreated(_toCheck);
     if (_toCheck.dead) {
       revert CharacterIsDead(msg.sender);
     }
-    if (working[msg.sender] >= block.number) {
+    if (working[adr] >= block.number) {
       revert CharacterAlreadyWorking(msg.sender);
     }
   }
@@ -148,26 +156,26 @@ contract Game is Ownable {
     _revertOnUninitializedBoss();
     _revertOnDeadBoss();
     Character storage _uChar = characters[msg.sender];
-    _checkIfCharacterIsAvailableToWork(_uChar);
+    _checkIfCharacterIsAvailableToWork(_uChar, msg.sender);
     working[msg.sender] = block.number;
     emit BossAttacked(currentBoss, _uChar, msg.sender);
-    uint64 charP = _uChar.powerLeft;
-    uint64 bP = currentBoss.powerLeft;
+    uint64 charP = _uChar.maxPower - _uChar.damage;
+    uint64 bP = currentBoss.maxPower - currentBoss.damage;
 
     if (bP <= charP) {
-      currentBoss.powerLeft = 0;
+      currentBoss.damage = currentBoss.maxPower;
       currentBoss.dead = true;
       _uChar.experience += bP / 100;
     } else {
-      currentBoss.powerLeft -= charP;
+      currentBoss.damage += charP;
       _uChar.experience += charP / 100;
     }
     bP /= 100;
     if (charP <= bP) {
-      _uChar.powerLeft = 0;
+      _uChar.damage = _uChar.maxPower;
       _uChar.dead = true;
     } else {
-      _uChar.powerLeft -= bP;
+      _uChar.damage += bP;
     }
 
     if (currentBoss.dead) {
@@ -181,7 +189,7 @@ contract Game is Ownable {
   //Currently gives experience as reward after killing a boss
   function claimReward() external {
     Character storage _char = characters[msg.sender];
-    _checkIfCharacterIsAvailableToWork(_char);
+    _checkIfCharacterIsAvailableToWork(_char, msg.sender);
     working[msg.sender] = block.number;
     uint8 x = canClaimReward[msg.sender];
     if (x == FALSE || x == 0) {
@@ -207,13 +215,21 @@ contract Game is Ownable {
       revert CharacterAlreadyWorking(adr);
     }
     Character storage _ownCharacter = characters[msg.sender];
-    _checkIfCharacterIsAvailableToWork(_ownCharacter);
+    _checkIfCharacterIsAvailableToWork(_ownCharacter, msg.sender);
     if (_ownCharacter.experience < points) {
       revert NotEnoughExperience(msg.sender);
     }
+    if (_toHeal.damage == 0) {
+      revert CharacterNotDamaged(address(adr));
+    }
     working[msg.sender] = block.number;
-    _ownCharacter.experience -= points;
-    _toHeal.powerLeft += uint64(points);
+    if (points > _toHeal.damage) {
+      _ownCharacter.experience -= _toHeal.damage;
+      _toHeal.damage = 0;
+    } else {
+      _ownCharacter.experience -= points;
+      _toHeal.damage -= uint64(points);
+    }
   }
 
   function _getRandomPower() internal view returns (uint64) {
