@@ -10,12 +10,15 @@ contract Game is Ownable {
     uint64 maxPower;
     uint64 damage;
     uint128 experience;
+    uint8 level;
     bool created;
     bool dead;
   }
 
   uint8 internal constant FALSE = 1;
   uint8 internal constant TRUE = 2;
+  uint128 public level2Points = 0;
+  uint128 public level3Points = 0;
   Character public currentBoss;
   mapping(address userAddress => Character usersCharacter) public characters;
   mapping(address userAddress => uint256 blockNumber) private working;
@@ -37,6 +40,8 @@ contract Game is Ownable {
   error CharacterCannotHealOneself(address);
   error NotEnoughExperience(address);
 
+  error LevelPointsTooLow(string);
+
   // "Boss is still alive"
   error BossNotDead();
   error BossNotCreated();
@@ -50,7 +55,21 @@ contract Game is Ownable {
   event BossKilled(address indexed);
   event CanClaimReward(address indexed);
 
-  constructor() Ownable(msg.sender) {}
+  constructor(uint128 l2p, uint128 l3p) Ownable(msg.sender) {
+    level2Points = l2p;
+    level3Points = l3p;
+  }
+
+  function setLevel2Points(uint128 l2p) external onlyOwner {
+    level2Points = l2p;
+  }
+
+  function setLevel3Points(uint128 l3p) external onlyOwner {
+    if (l3p > level2Points) {
+      revert LevelPointsTooLow("Points needed for getting to level 3 cannot be fewer than level 2");
+    }
+    level3Points = l3p;
+  }
 
   function makeNewBoss(string memory _name, uint64 _totalPower) external onlyOwner {
     _makeNewBoss(_name, _totalPower);
@@ -58,7 +77,8 @@ contract Game is Ownable {
 
   function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
     _revertOnAliveBoss();
-    currentBoss = Character({name: _name, maxPower: _totalPower, damage: 0, experience: 0, created: true, dead: false});
+    currentBoss =
+      Character({name: _name, maxPower: _totalPower, damage: 0, experience: 0, level: 1, created: true, dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -119,6 +139,7 @@ contract Game is Ownable {
       maxPower: _power,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -183,6 +204,22 @@ contract Game is Ownable {
       emit CanClaimReward(msg.sender);
       _makeNewRandomBoss();
       canClaimReward[msg.sender] = TRUE;
+    }
+    _changeCharacterLevel(_uChar);
+  }
+
+  function _changeCharacterLevel(Character storage _char) private {
+    if (_char.level == 1 && _char.experience >= level2Points) {
+      _char.level = 2;
+    }
+    if (_char.level == 2 && _char.experience >= level3Points) {
+      _char.level = 3;
+    }
+    if (_char.level == 2 && _char.experience < level2Points) {
+      _char.level = 1;
+    }
+    if (_char.level == 3 && _char.experience < level3Points) {
+      _char.level = 2;
     }
   }
 

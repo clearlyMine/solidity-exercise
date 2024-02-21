@@ -14,12 +14,13 @@ contract GameTest is Test {
     maxPower: 18_417_920_234_273_413_000,
     damage: 0,
     experience: 0,
+    level: 1,
     created: true,
     dead: false
   });
 
   function setUp() public {
-    game = new Game();
+    game = new Game(3_211_651_848_984_984_460, 3_211_651_848_984_984_460 * 2);
     vm.roll(50);
   }
 
@@ -39,6 +40,7 @@ contract GameTest is Test {
       maxPower: 1_730_191_093_711_958_967,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -78,6 +80,7 @@ contract GameTest is Test {
       maxPower: 341_403_779_608_662_062,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -88,7 +91,7 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (,, uint256 bossDamage,,, bool bossDead) = game.currentBoss();
+    (,, uint256 bossDamage,,,, bool bossDead) = game.currentBoss();
 
     assertEq(bossDamage, _char.maxPower);
     assert(!bossDead);
@@ -111,6 +114,7 @@ contract GameTest is Test {
       maxPower: 341_403_779_608_662_062,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -180,6 +184,7 @@ contract GameTest is Test {
       maxPower: 341_403_779_608_662_062,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -196,6 +201,7 @@ contract GameTest is Test {
       maxPower: 18_417_920_234_273_413_000,
       damage: 341_403_779_608_662_062,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -204,6 +210,7 @@ contract GameTest is Test {
       maxPower: 341_403_779_608_662_062,
       damage: 184_179_202_342_734_130,
       experience: 3_414_037_796_086_620,
+      level: 1,
       created: true,
       dead: false
     });
@@ -212,7 +219,7 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (, uint256 bossMaxPower, uint256 bossDamage,,, bool bossDead) = game.currentBoss();
+    (, uint256 bossMaxPower, uint256 bossDamage,,,, bool bossDead) = game.currentBoss();
     assertEq(bossMaxPower - bossDamage, 17_919_291_877_398_823_006);
     assert(!bossDead);
     assertEq(_newChar.maxPower, _newChar.damage);
@@ -288,6 +295,7 @@ contract GameTest is Test {
       maxPower: 341_403_779_608_662_062,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
@@ -300,6 +308,87 @@ contract GameTest is Test {
     game.attackBoss();
   }
 
+  function testLevelDoesntChangeIfThresholdIsntReachedOnExperienceIncrease() public {
+    game.makeNewRandomBoss();
+
+    vm.startPrank(address(1));
+    game.createNewCharacter();
+    vm.roll(52);
+    game.attackBoss();
+
+    vm.stopPrank();
+    Game.Character memory _char = game.getUsersCharacter(address(1));
+    assertGt(_char.experience, 0);
+    assertEq(_char.level, 1);
+  }
+
+  function testLevelDoesntChangeIfThresholdIsntReachedOnExperienceDecrease() public {
+    Game _localGame = new Game(403_779_608_662_062, 1_730_191_093_711_958_967 * 2);
+    _localGame.makeNewBoss("Gujju", 4_037_796_086_620_620_000);
+
+    vm.startPrank(address(1));
+    _localGame.createNewCharacter();
+    Game.Character memory _lastChar;
+    uint256 _blockNum = 52;
+    while (!_lastChar.dead) {
+      vm.roll(_blockNum++);
+      _localGame.attackBoss();
+      _lastChar = _localGame.getUsersCharacter(address(1));
+    }
+
+    vm.stopPrank();
+
+    assert(_lastChar.dead);
+    assertEq(_lastChar.level, 2);
+  }
+
+  function testLevel1To2UpgradeOnIncreasingExperience() public {
+    Game _localGame = new Game(403_779_608_662_062, 1_730_191_093_711_958_967 * 2);
+    _localGame.makeNewRandomBoss();
+    vm.startPrank(address(1));
+    _localGame.createNewCharacter();
+    vm.roll(51);
+    _localGame.attackBoss();
+    vm.stopPrank();
+
+    assertEq(_localGame.getUsersCharacter(address(1)).level, 2);
+  }
+
+  function testLevel1To2To3UpgradeOnIncreasingExperience() public {
+    Game _localGame = new Game(403_779_608_662_062, 17_301_910_937_119_589 + 3);
+    _localGame.makeNewRandomBoss();
+    vm.startPrank(address(1));
+    _localGame.createNewCharacter();
+    vm.roll(51);
+    _localGame.attackBoss();
+    vm.roll(52);
+    _localGame.attackBoss();
+    vm.stopPrank();
+
+    assertEq(_localGame.getUsersCharacter(address(1)).level, 3);
+  }
+
+  //With the current game experience increasing this will never happen, as the character earns more experience than it
+  //loses every time
+  // function testLevelDowngradeOnDecreasingExperience() public {
+  //   Game _localGame = new Game(403_779_608_662_062, 17301910937119589 + 3);
+  //   _localGame.makeNewBoss("x", 3333333333333333333);
+  //
+  //   vm.startPrank(address(1));
+  //   _localGame.createNewCharacter();
+  //   vm.roll(51);
+  //   _localGame.attackBoss();
+  //   vm.stopPrank();
+  //   Game.Character memory _char = _localGame.getUsersCharacter(address(1));
+  //   assertEq(_char.level, 2);
+  //
+  //   vm.startPrank(address(1));
+  //   vm.roll(52);
+  //   _localGame.attackBoss();
+  //   vm.stopPrank();
+  //   assertEq(_char.level, 1);
+  // }
+
   function _healingSetUp() public returns (Game.Character memory _char) {
     vm.startPrank(address(1));
     game.createNewCharacter();
@@ -308,6 +397,7 @@ contract GameTest is Test {
       maxPower: 341_403_779_608_662_062,
       damage: 0,
       experience: 0,
+      level: 1,
       created: true,
       dead: false
     });
