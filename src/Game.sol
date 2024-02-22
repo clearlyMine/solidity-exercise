@@ -195,6 +195,7 @@ contract Game is Ownable {
     if (charP <= bP) {
       _uChar.damage = _uChar.maxPower;
       _uChar.dead = true;
+      _uChar.experience -= charP / 1000;
     } else {
       _uChar.damage += bP;
     }
