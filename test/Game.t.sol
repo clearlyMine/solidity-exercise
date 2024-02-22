@@ -406,32 +406,33 @@ contract GameTest is Test {
   }
 
   function testCanHealOthers() public {
-    game.makeNewBossWithRandomPowers("gujju");
+    Game _localGame = new Game(4_444_444, 9_999_999_999_999);
+    _localGame.makeNewBoss("gujju", 494_949_494_949_494_949);
     vm.roll(52);
     vm.startPrank(address(1));
-    game.createNewCharacter();
+    _localGame.createNewCharacter();
     vm.stopPrank();
     vm.startPrank(address(2));
-    game.createNewCharacter();
+    _localGame.createNewCharacter();
     vm.stopPrank();
 
     vm.roll(53);
 
     vm.startPrank(address(1));
-    game.attackBoss();
+    _localGame.attackBoss();
     vm.stopPrank();
     vm.startPrank(address(2));
-    game.attackBoss();
+    _localGame.attackBoss();
     vm.stopPrank();
     vm.roll(54);
 
-    uint64 u2Damage = game.getUsersCharacter(address(2)).damage;
+    uint64 u2Damage = _localGame.getUsersCharacter(address(2)).damage;
 
     vm.startPrank(address(1));
-    game.healCharacter(address(2), 3);
+    _localGame.healCharacter(address(2), 3);
     vm.stopPrank();
 
-    assertEq(game.getUsersCharacter(address(2)).damage, u2Damage - 3);
+    assertEq(_localGame.getUsersCharacter(address(2)).damage, u2Damage - 3);
   }
 
   function testCannotHealOneself() public {
@@ -451,6 +452,33 @@ contract GameTest is Test {
     vm.startPrank(address(2));
     vm.expectRevert(abi.encodeWithSelector(Game.CharacterNotCreated.selector, address(2)));
     game.healCharacter(address(1), 1);
+  }
+
+  function testCannotHealWhenLevel1() public {
+    Game _localGame = new Game(44_444_444_444_444_444_444, 999_999_999_999_000_999_999_999_999);
+    _localGame.makeNewBoss("gujju", 494_949_494_949_494_949);
+    vm.roll(52);
+    vm.startPrank(address(1));
+    _localGame.createNewCharacter();
+    vm.stopPrank();
+    vm.startPrank(address(2));
+    _localGame.createNewCharacter();
+    vm.stopPrank();
+
+    vm.roll(53);
+
+    vm.startPrank(address(1));
+    _localGame.attackBoss();
+    vm.stopPrank();
+    vm.startPrank(address(2));
+    _localGame.attackBoss();
+    vm.stopPrank();
+    vm.roll(54);
+
+    vm.startPrank(address(1));
+    vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 2 is needed"));
+    _localGame.healCharacter(address(2), 3);
+    vm.stopPrank();
   }
 
   function testCannotHealWhenDead() public {
@@ -479,32 +507,38 @@ contract GameTest is Test {
   }
 
   function testCannotHealWhenWorking() public {
-    game.makeNewBossWithRandomPowers("gujju");
-    _healingSetUp();
+    Game _localGame = new Game(4_444_444, 9_999_999_999_999);
+    _localGame.makeNewBossWithRandomPowers("gujju");
+
+    vm.startPrank(address(1));
+    _localGame.createNewCharacter();
+    vm.stopPrank();
+
+    vm.roll(51);
     vm.startPrank(address(2));
-    game.createNewCharacter();
+    _localGame.createNewCharacter();
     vm.stopPrank();
 
     vm.startPrank(address(3));
-    game.createNewCharacter();
+    _localGame.createNewCharacter();
     vm.stopPrank();
 
     vm.roll(52);
     vm.startPrank(address(1));
-    game.attackBoss();
+    _localGame.attackBoss();
     vm.stopPrank();
 
     vm.startPrank(address(2));
-    game.attackBoss();
+    _localGame.attackBoss();
     vm.stopPrank();
 
     vm.roll(53);
 
     vm.startPrank(address(1));
 
-    game.healCharacter(address(2), 1);
+    _localGame.healCharacter(address(2), 1);
     vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(1)));
-    game.healCharacter(address(3), 1);
+    _localGame.healCharacter(address(3), 1);
     vm.stopPrank();
   }
 

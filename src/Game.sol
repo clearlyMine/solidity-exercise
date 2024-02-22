@@ -40,6 +40,8 @@ contract Game is Ownable {
   error CharacterCannotHealOneself(address);
   error NotEnoughExperience(address);
 
+  error LevelTooLow(string);
+
   error LevelPointsTooLow(string);
 
   // "Boss is still alive"
@@ -260,6 +262,10 @@ contract Game is Ownable {
     if (_toHeal.damage == 0) {
       revert CharacterNotDamaged(address(adr));
     }
+    if (_ownCharacter.level < 2) {
+      revert LevelTooLow("At least level 2 is needed");
+    }
+
     working[msg.sender] = block.number;
     if (points > _toHeal.damage) {
       _ownCharacter.experience -= _toHeal.damage;
