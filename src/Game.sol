@@ -31,14 +31,13 @@ contract Game is Ownable {
 
   error CannotClaimReward(address);
 
-  error InvalidInput();
+  error InvalidInput(string);
 
   error CharacterAlreadyCreated(address);
   error CharacterAlreadyWorking(address);
   error CharacterNotCreated(address);
   error CharacterNotDamaged(address);
   error CharacterIsDead(address);
-  error CharacterCannotHealOneself(address);
   error NotEnoughExperience(address);
 
   error LevelTooLow(string);
@@ -242,33 +241,41 @@ contract Game is Ownable {
     _char.experience += _getRandomPower();
   }
 
-  function healCharacter(address adr, uint128 points) external {
-    if (adr == msg.sender) {
-      revert CharacterCannotHealOneself(msg.sender);
+  function _canTheyHeal(address healer, address patient, uint128 pointsToHeal)
+    private
+    view
+    returns (Character storage, Character storage)
+  {
+    if (patient == healer) {
+      revert InvalidInput("Character cannot heal oneself");
     }
-    if (points == 0) {
-      revert InvalidInput();
+    if (pointsToHeal == 0) {
+      revert InvalidInput("Points to be healed cannot be 0");
     }
 
-    Character storage _toHeal = characters[adr];
+    Character storage _toHeal = characters[patient];
     if (!_toHeal.created) {
-      revert CharacterNotCreated(adr);
+      revert CharacterNotCreated(patient);
     }
-    if (working[adr] >= block.number) {
-      revert CharacterAlreadyWorking(adr);
+    if (working[patient] >= block.number) {
+      revert CharacterAlreadyWorking(patient);
     }
     Character storage _ownCharacter = characters[msg.sender];
     _checkIfCharacterIsAvailableToWork(_ownCharacter, msg.sender);
-    if (_ownCharacter.experience < points) {
+    if (_ownCharacter.experience < pointsToHeal) {
       revert NotEnoughExperience(msg.sender);
     }
     if (_toHeal.damage == 0) {
-      revert CharacterNotDamaged(address(adr));
+      revert CharacterNotDamaged(address(patient));
     }
     if (_ownCharacter.level < 2) {
       revert LevelTooLow("At least level 2 is needed");
     }
+    return (_ownCharacter, _toHeal);
+  }
 
+  function healCharacter(address adr, uint128 points) external {
+    (Character storage _ownCharacter, Character storage _toHeal) = _canTheyHeal(msg.sender, adr, points);
     working[msg.sender] = block.number;
     if (points > _toHeal.damage) {
       _ownCharacter.experience -= _toHeal.damage;

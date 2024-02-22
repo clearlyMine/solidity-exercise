@@ -437,13 +437,13 @@ contract GameTest is Test {
 
   function testCannotHealOneself() public {
     vm.startPrank(address(1));
-    vm.expectRevert(abi.encodeWithSelector(Game.CharacterCannotHealOneself.selector, address(1)));
+    vm.expectRevert(abi.encodeWithSelector(Game.InvalidInput.selector, "Character cannot heal oneself"));
     game.healCharacter(address(1), 1);
   }
 
   function testCannotHealWithZeroPoints() public {
     vm.startPrank(address(1));
-    vm.expectRevert(abi.encodeWithSelector(Game.InvalidInput.selector));
+    vm.expectRevert(abi.encodeWithSelector(Game.InvalidInput.selector, "Points to be healed cannot be 0"));
     game.healCharacter(address(2), 0);
   }
 
