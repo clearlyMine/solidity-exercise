@@ -23,6 +23,7 @@ contract Game is Ownable {
   mapping(address userAddress => Character usersCharacter) public characters;
   mapping(address userAddress => uint256 blockNumber) private working;
   mapping(address addr => uint8 bBool) public canClaimReward;
+  mapping(address addr => uint256 timestamp) public fireSpellCastAt;
   address[] public activePlayers;
 
   string[] public characterNames =
@@ -50,12 +51,14 @@ contract Game is Ownable {
   error BossIsDead();
   //  Name cannot be empty
   error EmptyNameSupplied();
+  error TimeBound(string);
 
   event NewCharacterCreated(address indexed creator, Character character);
   event NewBossCreated(Character boss);
   event BossAttacked(Character boss, Character attacker, address indexed user);
   event BossKilled(address indexed);
   event CanClaimReward(address indexed);
+  event CastFireSpell(Character);
 
   constructor(uint128 l2p, uint128 l3p) Ownable(msg.sender) {
     level2Points = l2p;
@@ -274,6 +277,22 @@ contract Game is Ownable {
       _ownCharacter.experience -= points;
       _toHeal.damage -= uint64(points);
     }
+  }
+
+  function castFireSpell() external {
+    Character storage _ownCharacter = characters[msg.sender];
+    _checkIfCharacterIsAvailableToWork(_ownCharacter, msg.sender);
+
+    if (_ownCharacter.level < 3) {
+      revert LevelTooLow("At least level 3 is needed");
+    }
+    if (fireSpellCastAt[msg.sender] > (block.timestamp - 1 days)) {
+      revert TimeBound("Can only cast once per 24 hours");
+    }
+
+    fireSpellCastAt[msg.sender] = block.timestamp;
+
+    emit CastFireSpell(_ownCharacter);
   }
 
   function _getRandomPower() internal view returns (uint64) {
