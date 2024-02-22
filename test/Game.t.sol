@@ -454,7 +454,7 @@ contract GameTest is Test {
     game.healCharacter(address(1), 1);
   }
 
-  function testCanCastFireSpell() public {
+  function testCanCastFireballSpell() public {
     Game _localGame = new Game(4444, 9999);
     _localGame.makeNewBoss("x", 999_999_999_999_999_999);
 
@@ -467,11 +467,11 @@ contract GameTest is Test {
     _localGame.attackBoss();
 
     vm.roll(53);
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     vm.stopPrank();
   }
 
-  function testCanCastFireSpellAfter24Hours() public {
+  function testCanCastFireballSpellAfter24Hours() public {
     Game _localGame = new Game(4444, 9999);
     _localGame.makeNewBoss("x", 999_999_999_999_999_999);
 
@@ -484,14 +484,14 @@ contract GameTest is Test {
     _localGame.attackBoss();
 
     vm.roll(53);
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     skip(1 days);
     vm.roll(54);
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     vm.stopPrank();
   }
 
-  function testCannotCastFireSpellTwiceWithin24Hours() public {
+  function testCannotCastFireballSpellTwiceWithin24Hours() public {
     Game _localGame = new Game(4444, 9999);
     _localGame.makeNewBoss("x", 999_999_999_999_999_999);
 
@@ -504,19 +504,19 @@ contract GameTest is Test {
     _localGame.attackBoss();
 
     vm.roll(53);
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     vm.roll(54);
     skip(100);
     vm.expectRevert(abi.encodeWithSelector(Game.TimeBound.selector, "Can only cast once per 24 hours"));
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     skip(1 days - 101);
     vm.expectRevert(abi.encodeWithSelector(Game.TimeBound.selector, "Can only cast once per 24 hours"));
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
 
     vm.stopPrank();
   }
 
-  function testCannotCastFireSpellBelowLevel3() public {
+  function testCannotCastFireballSpellBelowLevel3() public {
     Game _localGame = new Game(44_444_444_444, 999_999_999_999_999_999);
     _localGame.makeNewBoss("x", 999_999_999_999_999_999);
 
@@ -524,17 +524,17 @@ contract GameTest is Test {
     _localGame.createNewCharacter();
     vm.roll(51);
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 3 is needed"));
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     vm.roll(52);
     _localGame.attackBoss();
     vm.roll(53);
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 3 is needed"));
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     vm.roll(54);
     _localGame.attackBoss();
     vm.roll(55);
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 3 is needed"));
-    _localGame.castFireSpell();
+    _localGame.castFireballSpell();
     vm.stopPrank();
   }
 
