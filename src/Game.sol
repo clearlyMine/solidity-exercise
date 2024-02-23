@@ -7,7 +7,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract Game is Ownable {
   struct Character {
     string name;
-    uint64 maxPower;
+    uint64 hp;
     uint64 damage;
     uint128 xp;
     uint8 level;
@@ -81,8 +81,7 @@ contract Game is Ownable {
 
   function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
     _revertOnAliveBoss();
-    currentBoss =
-      Character({name: _name, maxPower: _totalPower, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    currentBoss = Character({name: _name, hp: _totalPower, damage: 0, xp: 0, level: 1, created: true, dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -114,13 +113,13 @@ contract Game is Ownable {
   }
 
   function _revertOnAliveBoss() internal view {
-    if (currentBoss.created && !currentBoss.dead && currentBoss.maxPower > currentBoss.damage) {
+    if (currentBoss.created && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
       revert BossNotDead();
     }
   }
 
   function _revertOnDeadBoss() internal view {
-    if (currentBoss.dead || currentBoss.maxPower == currentBoss.damage) {
+    if (currentBoss.dead || currentBoss.hp == currentBoss.damage) {
       revert BossIsDead();
     }
   }
@@ -138,15 +137,8 @@ contract Game is Ownable {
     }
     uint64 _power = _getRandomPower();
     uint256 _nameIndex = _power % characterNames.length;
-    Character memory _newChar = Character({
-      name: characterNames[_nameIndex],
-      maxPower: _power,
-      damage: 0,
-      xp: 0,
-      level: 1,
-      created: true,
-      dead: false
-    });
+    Character memory _newChar =
+      Character({name: characterNames[_nameIndex], hp: _power, damage: 0, xp: 0, level: 1, created: true, dead: false});
     characters[msg.sender] = _newChar;
     activePlayers.push(msg.sender);
     working[msg.sender] = block.number;
@@ -184,11 +176,11 @@ contract Game is Ownable {
     _checkIfCharacterIsAvailableToWork(_uChar, msg.sender);
     working[msg.sender] = block.number;
     emit BossAttacked(currentBoss, _uChar, msg.sender);
-    uint64 charP = _uChar.maxPower - _uChar.damage;
-    uint64 bP = currentBoss.maxPower - currentBoss.damage;
+    uint64 charP = _uChar.hp - _uChar.damage;
+    uint64 bP = currentBoss.hp - currentBoss.damage;
 
     if (bP <= charP) {
-      currentBoss.damage = currentBoss.maxPower;
+      currentBoss.damage = currentBoss.hp;
       currentBoss.dead = true;
       _uChar.xp += bP / 100;
     } else {
@@ -197,7 +189,7 @@ contract Game is Ownable {
     }
     bP /= 100;
     if (charP <= bP) {
-      _uChar.damage = _uChar.maxPower;
+      _uChar.damage = _uChar.hp;
       _uChar.dead = true;
       _uChar.xp -= charP / 1000;
     } else {

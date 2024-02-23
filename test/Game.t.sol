@@ -11,7 +11,7 @@ contract GameTest is Test {
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
   Game.Character private _gujjuBoss = Game.Character({
     name: "gujju",
-    maxPower: 18_417_920_234_273_413_000,
+    hp: 18_417_920_234_273_413_000,
     damage: 0,
     xp: 0,
     level: 1,
@@ -37,7 +37,7 @@ contract GameTest is Test {
   function testNewCharacterCreation() public {
     Game.Character memory _newChar = Game.Character({
       name: "Superman",
-      maxPower: 1_730_191_093_711_958_967,
+      hp: 1_730_191_093_711_958_967,
       damage: 0,
       xp: 0,
       level: 1,
@@ -75,15 +75,8 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char = Game.Character({
-      name: "Joy",
-      maxPower: 341_403_779_608_662_062,
-      damage: 0,
-      xp: 0,
-      level: 1,
-      created: true,
-      dead: false
-    });
+    Game.Character memory _char =
+      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
 
     //attack boss
     vm.expectEmit();
@@ -93,9 +86,9 @@ contract GameTest is Test {
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
     (,, uint256 bossDamage,,,, bool bossDead) = game.currentBoss();
 
-    assertEq(bossDamage, _char.maxPower);
+    assertEq(bossDamage, _char.hp);
     assert(!bossDead);
-    assertEq(_newChar.damage, _gujjuBoss.maxPower / 100);
+    assertEq(_newChar.damage, _gujjuBoss.hp / 100);
     assert(!_newChar.dead);
   }
 
@@ -109,15 +102,8 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char = Game.Character({
-      name: "Joy",
-      maxPower: 341_403_779_608_662_062,
-      damage: 0,
-      xp: 0,
-      level: 1,
-      created: true,
-      dead: false
-    });
+    Game.Character memory _char =
+      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
 
     //attack boss
     vm.expectEmit();
@@ -179,15 +165,8 @@ contract GameTest is Test {
     vm.startPrank(address(1));
     game.createNewCharacter();
     vm.roll(53);
-    Game.Character memory _char = Game.Character({
-      name: "Joy",
-      maxPower: 341_403_779_608_662_062,
-      damage: 0,
-      xp: 0,
-      level: 1,
-      created: true,
-      dead: false
-    });
+    Game.Character memory _char =
+      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
 
     //attack boss
     vm.expectEmit();
@@ -198,7 +177,7 @@ contract GameTest is Test {
     vm.roll(54);
     Game.Character memory _boss = Game.Character({
       name: "gujju",
-      maxPower: 18_417_920_234_273_413_000,
+      hp: 18_417_920_234_273_413_000,
       damage: 341_403_779_608_662_062,
       xp: 0,
       level: 1,
@@ -207,7 +186,7 @@ contract GameTest is Test {
     });
     _char = Game.Character({
       name: "Joy",
-      maxPower: 341_403_779_608_662_062,
+      hp: 341_403_779_608_662_062,
       damage: 184_179_202_342_734_130,
       xp: 3_414_037_796_086_620,
       level: 1,
@@ -219,10 +198,10 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (, uint256 bossMaxPower, uint256 bossDamage,,,, bool bossDead) = game.currentBoss();
-    assertEq(bossMaxPower - bossDamage, 17_919_291_877_398_823_006);
+    (, uint256 bossHp, uint256 bossDamage,,,, bool bossDead) = game.currentBoss();
+    assertEq(bossHp - bossDamage, 17_919_291_877_398_823_006);
     assert(!bossDead);
-    assertEq(_newChar.maxPower, _newChar.damage);
+    assertEq(_newChar.hp, _newChar.damage);
     assert(_newChar.dead);
   }
 
@@ -290,15 +269,8 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char = Game.Character({
-      name: "Joy",
-      maxPower: 341_403_779_608_662_062,
-      damage: 0,
-      xp: 0,
-      level: 1,
-      created: true,
-      dead: false
-    });
+    Game.Character memory _char =
+      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
     //attack boss
     vm.expectEmit();
     emit Game.BossAttacked(_gujjuBoss, _char, address(1));
@@ -392,15 +364,8 @@ contract GameTest is Test {
   function _healingSetUp() public returns (Game.Character memory _char) {
     vm.startPrank(address(1));
     game.createNewCharacter();
-    _char = Game.Character({
-      name: "Joy",
-      maxPower: 341_403_779_608_662_062,
-      damage: 0,
-      xp: 0,
-      level: 1,
-      created: true,
-      dead: false
-    });
+    _char =
+      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
     vm.stopPrank();
     vm.roll(51);
   }
