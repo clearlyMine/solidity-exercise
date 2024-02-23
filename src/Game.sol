@@ -9,7 +9,7 @@ contract Game is Ownable {
     string name;
     uint64 maxPower;
     uint64 damage;
-    uint128 experience;
+    uint128 xp;
     uint8 level;
     bool created;
     bool dead;
@@ -38,7 +38,7 @@ contract Game is Ownable {
   error CharacterNotCreated(address);
   error CharacterNotDamaged(address);
   error CharacterIsDead(address);
-  error NotEnoughExperience(address);
+  error NotEnoughXp(address);
 
   error LevelTooLow(string);
 
@@ -82,7 +82,7 @@ contract Game is Ownable {
   function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
     _revertOnAliveBoss();
     currentBoss =
-      Character({name: _name, maxPower: _totalPower, damage: 0, experience: 0, level: 1, created: true, dead: false});
+      Character({name: _name, maxPower: _totalPower, damage: 0, xp: 0, level: 1, created: true, dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -142,7 +142,7 @@ contract Game is Ownable {
       name: characterNames[_nameIndex],
       maxPower: _power,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -190,16 +190,16 @@ contract Game is Ownable {
     if (bP <= charP) {
       currentBoss.damage = currentBoss.maxPower;
       currentBoss.dead = true;
-      _uChar.experience += bP / 100;
+      _uChar.xp += bP / 100;
     } else {
       currentBoss.damage += charP;
-      _uChar.experience += charP / 100;
+      _uChar.xp += charP / 100;
     }
     bP /= 100;
     if (charP <= bP) {
       _uChar.damage = _uChar.maxPower;
       _uChar.dead = true;
-      _uChar.experience -= charP / 1000;
+      _uChar.xp -= charP / 1000;
     } else {
       _uChar.damage += bP;
     }
@@ -214,21 +214,21 @@ contract Game is Ownable {
   }
 
   function _changeCharacterLevel(Character storage _char) private {
-    if (_char.level == 1 && _char.experience >= level2Points) {
+    if (_char.level == 1 && _char.xp >= level2Points) {
       _char.level = 2;
     }
-    if (_char.level == 2 && _char.experience >= level3Points) {
+    if (_char.level == 2 && _char.xp >= level3Points) {
       _char.level = 3;
     }
-    if (_char.level == 2 && _char.experience < level2Points) {
+    if (_char.level == 2 && _char.xp < level2Points) {
       _char.level = 1;
     }
-    if (_char.level == 3 && _char.experience < level3Points) {
+    if (_char.level == 3 && _char.xp < level3Points) {
       _char.level = 2;
     }
   }
 
-  //Currently gives experience as reward after killing a boss
+  //Currently gives xp as reward after killing a boss
   function claimReward() external {
     Character storage _char = characters[msg.sender];
     _checkIfCharacterIsAvailableToWork(_char, msg.sender);
@@ -238,7 +238,7 @@ contract Game is Ownable {
       revert CannotClaimReward(msg.sender);
     }
     canClaimReward[msg.sender] = FALSE;
-    _char.experience += _getRandomPower();
+    _char.xp += _getRandomPower();
   }
 
   function _canTheyHeal(address healer, address patient, uint128 pointsToHeal)
@@ -262,8 +262,8 @@ contract Game is Ownable {
     }
     Character storage _ownCharacter = characters[msg.sender];
     _checkIfCharacterIsAvailableToWork(_ownCharacter, msg.sender);
-    if (_ownCharacter.experience < pointsToHeal) {
-      revert NotEnoughExperience(msg.sender);
+    if (_ownCharacter.xp < pointsToHeal) {
+      revert NotEnoughXp(msg.sender);
     }
     if (_toHeal.damage == 0) {
       revert CharacterNotDamaged(address(patient));
@@ -278,10 +278,10 @@ contract Game is Ownable {
     (Character storage _ownCharacter, Character storage _toHeal) = _canTheyHeal(msg.sender, adr, points);
     working[msg.sender] = block.number;
     if (points > _toHeal.damage) {
-      _ownCharacter.experience -= _toHeal.damage;
+      _ownCharacter.xp -= _toHeal.damage;
       _toHeal.damage = 0;
     } else {
-      _ownCharacter.experience -= points;
+      _ownCharacter.xp -= points;
       _toHeal.damage -= uint64(points);
     }
   }

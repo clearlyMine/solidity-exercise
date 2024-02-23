@@ -13,7 +13,7 @@ contract GameTest is Test {
     name: "gujju",
     maxPower: 18_417_920_234_273_413_000,
     damage: 0,
-    experience: 0,
+    xp: 0,
     level: 1,
     created: true,
     dead: false
@@ -39,7 +39,7 @@ contract GameTest is Test {
       name: "Superman",
       maxPower: 1_730_191_093_711_958_967,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -79,7 +79,7 @@ contract GameTest is Test {
       name: "Joy",
       maxPower: 341_403_779_608_662_062,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -99,7 +99,7 @@ contract GameTest is Test {
     assert(!_newChar.dead);
   }
 
-  function testAttackingBossGivesExperience() public {
+  function testAttackingBossGivesXp() public {
     //create boss
     game.makeNewBossWithRandomPowers("gujju");
     vm.roll(52);
@@ -113,7 +113,7 @@ contract GameTest is Test {
       name: "Joy",
       maxPower: 341_403_779_608_662_062,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -124,7 +124,7 @@ contract GameTest is Test {
     emit Game.BossAttacked(_gujjuBoss, _char, address(1));
     game.attackBoss();
     Game.Character memory _newChar1 = game.getUsersCharacter(address(1));
-    assertEq(_newChar1.experience, 3_414_037_796_086_620);
+    assertEq(_newChar1.xp, 3_414_037_796_086_620);
   }
 
   // Takes 20 addresses to kill boss
@@ -161,13 +161,13 @@ contract GameTest is Test {
   function testCanClaimReward() public {
     _killBoss();
     vm.roll(53);
-    //get experience prior to claiming reward
+    //get xp prior to claiming reward
     Game.Character memory _char = game.getUsersCharacter(address(20));
     vm.startPrank(address(20));
     game.claimReward();
     Game.Character memory _char2 = game.getUsersCharacter(address(20));
 
-    assertGt(_char2.experience, _char.experience);
+    assertGt(_char2.xp, _char.xp);
   }
 
   function testCanAttackBossInSubsequentBlocks() public {
@@ -183,7 +183,7 @@ contract GameTest is Test {
       name: "Joy",
       maxPower: 341_403_779_608_662_062,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -200,7 +200,7 @@ contract GameTest is Test {
       name: "gujju",
       maxPower: 18_417_920_234_273_413_000,
       damage: 341_403_779_608_662_062,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -209,7 +209,7 @@ contract GameTest is Test {
       name: "Joy",
       maxPower: 341_403_779_608_662_062,
       damage: 184_179_202_342_734_130,
-      experience: 3_414_037_796_086_620,
+      xp: 3_414_037_796_086_620,
       level: 1,
       created: true,
       dead: false
@@ -257,7 +257,7 @@ contract GameTest is Test {
   //   Game.Character memory _boss = Game.Character({
   //     name: "gujju",
   //     powerLeft: 18_417_920_234_273_413_000,
-  //     experience: 0,
+  //     xp: 0,
   //     created: true,
   //     dead: false
   //   });
@@ -269,7 +269,7 @@ contract GameTest is Test {
   //   Game.Character memory _char = Game.Character({
   //     name: "Joy",
   //     powerLeft: 341_403_779_608_662_062,
-  //     experience: 0,
+  //     xp: 0,
   //     created: true,
   //     dead: false
   //   });
@@ -294,7 +294,7 @@ contract GameTest is Test {
       name: "Joy",
       maxPower: 341_403_779_608_662_062,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -308,7 +308,7 @@ contract GameTest is Test {
     game.attackBoss();
   }
 
-  function testLevelDoesntChangeIfThresholdIsntReachedOnExperienceIncrease() public {
+  function testLevelDoesntChangeIfThresholdIsntReachedOnXpIncrease() public {
     game.makeNewRandomBoss();
 
     vm.startPrank(address(1));
@@ -318,11 +318,11 @@ contract GameTest is Test {
 
     vm.stopPrank();
     Game.Character memory _char = game.getUsersCharacter(address(1));
-    assertGt(_char.experience, 0);
+    assertGt(_char.xp, 0);
     assertEq(_char.level, 1);
   }
 
-  function testLevelDoesntChangeIfThresholdIsntReachedOnExperienceDecrease() public {
+  function testLevelDoesntChangeIfThresholdIsntReachedOnXpDecrease() public {
     Game _localGame = new Game(403_779_608_662_062, 1_730_191_093_711_958_967 * 2);
     _localGame.makeNewBoss("Gujju", 4_037_796_086_620_620_000);
 
@@ -342,7 +342,7 @@ contract GameTest is Test {
     assertEq(_lastChar.level, 2);
   }
 
-  function testLevel1To2UpgradeOnIncreasingExperience() public {
+  function testLevel1To2UpgradeOnIncreasingXp() public {
     Game _localGame = new Game(403_779_608_662_062, 1_730_191_093_711_958_967 * 2);
     _localGame.makeNewRandomBoss();
     vm.startPrank(address(1));
@@ -354,7 +354,7 @@ contract GameTest is Test {
     assertEq(_localGame.getUsersCharacter(address(1)).level, 2);
   }
 
-  function testLevel1To2To3UpgradeOnIncreasingExperience() public {
+  function testLevel1To2To3UpgradeOnIncreasingXp() public {
     Game _localGame = new Game(403_779_608_662_062, 17_301_910_937_119_589 + 3);
     _localGame.makeNewRandomBoss();
     vm.startPrank(address(1));
@@ -368,9 +368,9 @@ contract GameTest is Test {
     assertEq(_localGame.getUsersCharacter(address(1)).level, 3);
   }
 
-  //With the current game experience increasing this will never happen, as the character earns more experience than it
+  //With the current game xp increasing this will never happen, as the character earns more xp than it
   //loses every time
-  // function testLevelDowngradeOnDecreasingExperience() public {
+  // function testLevelDowngradeOnDecreasingXp() public {
   //   Game _localGame = new Game(403_779_608_662_062, 17301910937119589 + 3);
   //   _localGame.makeNewBoss("x", 3333333333333333333);
   //
@@ -396,7 +396,7 @@ contract GameTest is Test {
       name: "Joy",
       maxPower: 341_403_779_608_662_062,
       damage: 0,
-      experience: 0,
+      xp: 0,
       level: 1,
       created: true,
       dead: false
@@ -650,19 +650,19 @@ contract GameTest is Test {
     vm.stopPrank();
   }
 
-  function testCannotHealWithNoExperience() public {
+  function testCannotHealWithNoXp() public {
     _healingSetUp();
 
     vm.startPrank(address(2));
     game.createNewCharacter();
     vm.roll(52);
 
-    vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector, address(2)));
+    vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughXp.selector, address(2)));
     game.healCharacter(address(1), 1);
     vm.stopPrank();
   }
 
-  function testCannotHealWithLessExperience() public {
+  function testCannotHealWithLessXp() public {
     game.makeNewRandomBoss();
     _healingSetUp();
 
@@ -675,7 +675,7 @@ contract GameTest is Test {
     vm.startPrank(address(1));
     game.attackBoss();
     vm.roll(53);
-    vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughExperience.selector, address(1)));
+    vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughXp.selector, address(1)));
     game.healCharacter(address(2), 1_730_191_093_711_958_967 + 1);
     vm.stopPrank();
   }
