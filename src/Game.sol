@@ -265,6 +265,9 @@ contract Game is Ownable {
     if (_char.level == 3 && _char.xp < level3Points) {
       _char.level = 2;
     }
+    if (_char.level == 3 && _char.xp < level2Points) {
+      _char.level = 1;
+    }
   }
 
   //Currently gives xp as reward after killing a boss
