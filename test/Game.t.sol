@@ -38,6 +38,8 @@ contract GameTest is Test {
     Game.Character memory _newChar = Game.Character({
       name: "Superman",
       hp: 1_730_191_093_711_958_967,
+      name: "Gordon",
+      hp: 1_019_749_324_495_719_894,
       damage: 0,
       xp: 0,
       level: 1,
@@ -77,6 +79,15 @@ contract GameTest is Test {
 
     Game.Character memory _char =
       Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Gordon",
+      hp: 1_019_749_324_495_719_894,
+      damage: 0,
+      xp: 0,
+      level: 1,
+      created: true,
+      dead: false
+    });
 
     //attack boss
     vm.expectEmit();
@@ -102,15 +113,22 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char =
-      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Gordon",
+      hp: 1_019_749_324_495_719_894,
+      damage: 0,
+      xp: 0,
+      level: 1,
+      created: true,
+      dead: false
+    });
 
     //attack boss
     vm.expectEmit();
     emit Game.BossAttacked(_gujjuBoss, _char, address(1));
     game.attackBoss();
     Game.Character memory _newChar1 = game.getUsersCharacter(address(1));
-    assertEq(_newChar1.xp, 3_414_037_796_086_620);
+    assertEq(_newChar1.xp, 10_197_493_244_957_198);
   }
 
   // Takes 20 addresses to kill boss
@@ -165,8 +183,15 @@ contract GameTest is Test {
     vm.startPrank(address(1));
     game.createNewCharacter();
     vm.roll(53);
-    Game.Character memory _char =
-      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Gordon",
+      hp: 1_019_749_324_495_719_894,
+      damage: 0,
+      xp: 0,
+      level: 1,
+      created: true,
+      dead: false
+    });
 
     //attack boss
     vm.expectEmit();
@@ -185,10 +210,10 @@ contract GameTest is Test {
       dead: false
     });
     _char = Game.Character({
-      name: "Joy",
-      hp: 341_403_779_608_662_062,
-      damage: 184_179_202_342_734_130,
-      xp: 3_414_037_796_086_620,
+      name: "Gordon",
+      hp: 1_019_749_324_495_719_894,
+      damage: 154_568_357_050_665_723,
+      xp: 10_197_493_244_957_198,
       level: 1,
       created: true,
       dead: false
@@ -203,6 +228,8 @@ contract GameTest is Test {
     assert(!bossDead);
     assertEq(_newChar.hp, _newChar.damage);
     assert(_newChar.dead);
+    assertEq(_newChar.hp, 1_019_749_324_495_719_894);
+    assert(!_newChar.dead);
   }
 
   function testCannotAttackBossWithoutCharacter() public {
@@ -269,8 +296,15 @@ contract GameTest is Test {
     game.createNewCharacter();
     vm.roll(53);
 
-    Game.Character memory _char =
-      Game.Character({name: "Joy", hp: 341_403_779_608_662_062, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    Game.Character memory _char = Game.Character({
+      name: "Gordon",
+      hp: 1_019_749_324_495_719_894,
+      damage: 0,
+      xp: 0,
+      level: 1,
+      created: true,
+      dead: false
+    });
     //attack boss
     vm.expectEmit();
     emit Game.BossAttacked(_gujjuBoss, _char, address(1));

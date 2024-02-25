@@ -305,8 +305,10 @@ contract Game is Ownable {
   }
 
   function _getRandomPower() internal view returns (uint64) {
-    return uint64(
-      bytes8(keccak256(abi.encodePacked(blockhash(block.number - 30), block.timestamp, msg.sender, block.prevrandao)))
-    ) / 10;
+    return uint64(_getRandomNumber()) / 10;
+  }
+
+  function _getRandomNumber() private view returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, msg.sender, block.prevrandao)));
   }
 }
