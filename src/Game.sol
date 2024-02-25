@@ -2,6 +2,7 @@
 pragma solidity >=0.8.13;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IBaycToken} from "./IBaycToken.sol";
 
 // TODO: Implement all user stories and one of the feature request
 contract Game is Ownable {
@@ -59,9 +60,13 @@ contract Game is Ownable {
   event CanClaimReward(address indexed);
   event CastFireballSpell(Character);
 
+  address baycAddress = 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
+  IBaycToken baycContract;
+
   constructor(uint128 l2p, uint128 l3p) Ownable(msg.sender) {
     level2Points = l2p;
     level3Points = l3p;
+    baycContract = IBaycToken(baycAddress);
   }
 
   function setLevel2Points(uint128 l2p) external onlyOwner {
@@ -75,14 +80,13 @@ contract Game is Ownable {
     level3Points = l3p;
   }
 
-  function makeNewBoss(string memory _name, uint64 _totalPower) external onlyOwner {
-    _makeNewBoss(_name, _totalPower);
+  function changeBaycAddress(address a) external onlyOwner {
+    baycAddress = a;
+    baycContract = IBaycToken(baycAddress);
   }
 
-  function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
-    _revertOnAliveBoss();
-    currentBoss = Character({name: _name, hp: _totalPower, damage: 0, xp: 0, level: 1, created: true, dead: false});
-    emit NewBossCreated(currentBoss);
+  function makeNewBoss(string memory _name, uint64 _totalPower) external onlyOwner {
+    _makeNewBoss(_name, _totalPower);
   }
 
   function makeNewBossWithRandomPowers(string calldata _name) external onlyOwner {
@@ -93,6 +97,12 @@ contract Game is Ownable {
   function _makeNewBossWithRandomPowers(string calldata _name) internal {
     _revertOnAliveBoss();
     _makeNewBoss(_name, _getRandomPower() * 10);
+  }
+
+  function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
+    _revertOnAliveBoss();
+    currentBoss = Character({name: _name, hp: _totalPower, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    emit NewBossCreated(currentBoss);
   }
 
   function makeNewRandomBoss() external onlyOwner {
