@@ -6,6 +6,15 @@ import {IBaycToken} from "./IBaycToken.sol";
 
 // TODO: Implement all user stories and one of the feature request
 contract Game is Ownable {
+  struct Boss {
+    uint16 name;
+    uint64 hp;
+    uint64 damage;
+    uint32 reward;
+    bool created;
+    bool dead;
+  }
+
   struct Character {
     string name;
     uint64 hp;
@@ -20,7 +29,7 @@ contract Game is Ownable {
   uint8 internal constant TRUE = 2;
   uint128 public level2Points = 0;
   uint128 public level3Points = 0;
-  Character public currentBoss;
+  Boss public currentBoss;
   mapping(address userAddress => Character usersCharacter) public characters;
   mapping(address userAddress => uint256 blockNumber) private working;
   mapping(address addr => uint8 bBool) public canClaimReward;
@@ -54,8 +63,8 @@ contract Game is Ownable {
   error TimeBound(string);
 
   event NewCharacterCreated(address indexed creator, Character character);
-  event NewBossCreated(Character boss);
-  event BossAttacked(Character boss, Character attacker, address indexed user);
+  event NewBossCreated(Boss boss);
+  event BossAttacked(Boss boss, Character attacker, address indexed user);
   event BossKilled(address indexed);
   event CanClaimReward(address indexed);
   event CastFireballSpell(Character);
@@ -85,35 +94,57 @@ contract Game is Ownable {
     baycContract = IBaycToken(baycAddress);
   }
 
-  function makeNewBoss(string memory _name, uint64 _totalPower) external onlyOwner {
+  function makeNewBoss() external onlyOwner {
+    _makeNewBoss();
+  }
+
+  function makeNewBoss(uint16 _name) external onlyOwner {
+    _makeNewBoss(_name);
+  }
+
+  function makeNewBoss(uint16 _name, uint64 _totalPower) external onlyOwner {
     _makeNewBoss(_name, _totalPower);
   }
 
-  function makeNewBossWithRandomPowers(string calldata _name) external onlyOwner {
-    _revertOnAliveBoss();
-    _makeNewBossWithRandomPowers(_name);
+  function makeNewBoss(uint16 _name, uint64 _totalPower, uint32 _reward) external onlyOwner {
+    _makeNewBoss(_name, _totalPower, _reward);
   }
 
-  function _makeNewBossWithRandomPowers(string calldata _name) internal {
+  function _makeNewBoss() internal {
     _revertOnAliveBoss();
-    _makeNewBoss(_name, _getRandomPower() * 10);
-  }
-
-  function _makeNewBoss(string memory _name, uint64 _totalPower) internal {
-    _revertOnAliveBoss();
-    currentBoss = Character({name: _name, hp: _totalPower, damage: 0, xp: 0, level: 1, created: true, dead: false});
+    uint16 _name = uint16(_getRandomNumber() % 10_000);
+    uint64 _totalPower = _getRandomPower() * 10;
+    uint32 _reward = uint32(_getRandomNumber());
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
     emit NewBossCreated(currentBoss);
   }
 
-  function makeNewRandomBoss() external onlyOwner {
-    _makeNewRandomBoss();
+  function _makeNewBoss(uint16 _name) internal {
+    _revertOnInvalidBossName(_name);
+    _revertOnAliveBoss();
+    uint64 _totalPower = _getRandomPower() * 10;
+    uint32 _reward = uint32(_getRandomNumber());
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    emit NewBossCreated(currentBoss);
   }
 
-  function _makeNewRandomBoss() internal {
+  function _makeNewBoss(uint16 _name, uint64 _totalPower) internal {
+    _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
-    uint64 _pow = _getRandomPower() * 10;
-    string memory _name = characterNames[_pow % characterNames.length];
-    _makeNewBoss(_name, _pow);
+    uint32 _reward = uint32(_getRandomNumber());
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    emit NewBossCreated(currentBoss);
+  }
+
+  function _makeNewBoss(uint16 _name, uint64 _totalPower, uint32 _reward) internal {
+    _revertOnInvalidBossName(_name);
+    _revertOnAliveBoss();
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    emit NewBossCreated(currentBoss);
+  }
+
+  function _revertOnInvalidBossName(uint16 _name) private pure {
+    require(_name >= 0 && _name < 10_000, "Name has to be in the range 0-9_999");
   }
 
   function _revertOnUninitializedBoss() internal view {
@@ -209,7 +240,7 @@ contract Game is Ownable {
     if (currentBoss.dead) {
       emit BossKilled(msg.sender);
       emit CanClaimReward(msg.sender);
-      _makeNewRandomBoss();
+      _makeNewBoss();
       canClaimReward[msg.sender] = TRUE;
     }
     _changeCharacterLevel(_uChar);
