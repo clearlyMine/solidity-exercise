@@ -117,7 +117,7 @@ contract GameTest is Test {
     emit Game.BossAttacked(_gujjuBoss, _char, address(1));
     game.attackBoss();
     Game.Character memory _newChar1 = game.getUsersCharacter(address(1));
-    assertEq(_newChar1.xp, 10_197_493_244_957_198);
+    assertEq(_newChar1.xp, 34_391_985);
   }
 
   // Takes 19 addresses to kill boss
@@ -203,7 +203,7 @@ contract GameTest is Test {
       name: "Gordon",
       hp: 1_019_749_324_495_719_894,
       damage: 154_568_357_050_665_723,
-      xp: 10_197_493_244_957_198,
+      xp: 34_391_985,
       level: 1,
       created: true,
       dead: false
@@ -317,8 +317,8 @@ contract GameTest is Test {
   }
 
   function testLevelDoesntChangeIfThresholdIsntReachedOnXpDecrease() public {
-    Game _localGame = new Game(403_779_608_662_062, 1_730_191_093_711_958_967 * 2);
-    _localGame.makeNewBoss(0, 4_037_796_086_620_620_000);
+    Game _localGame = new Game(4_294_967_295, 1_730_191_093_711_958_967 * 2);
+    _localGame.makeNewBoss(0, 4_037_796_086_620_620_000, 4_294_967_295);
 
     vm.startPrank(address(1));
     _localGame.createNewCharacter();
@@ -337,7 +337,7 @@ contract GameTest is Test {
   }
 
   function testLevel1To2UpgradeOnIncreasingXp() public {
-    Game _localGame = new Game(403_779_608_662_062, 1_730_191_093_711_958_967 * 2);
+    Game _localGame = new Game(26_956_855, 1_730_191_093_711_958_967 * 2);
     _localGame.makeNewBoss();
     vm.startPrank(address(1));
     _localGame.createNewCharacter();
@@ -349,13 +349,17 @@ contract GameTest is Test {
   }
 
   function testLevel1To2To3UpgradeOnIncreasingXp() public {
-    Game _localGame = new Game(403_779_608_662_062, 17_301_910_937_119_589 + 3);
+    Game _localGame = new Game(2_695_685, 26_956_855 + 3);
     _localGame.makeNewBoss();
     vm.startPrank(address(1));
     _localGame.createNewCharacter();
     vm.roll(51);
     _localGame.attackBoss();
     vm.roll(52);
+    _localGame.attackBoss();
+    vm.roll(53);
+    _localGame.attackBoss();
+    vm.roll(54);
     _localGame.attackBoss();
     vm.stopPrank();
 

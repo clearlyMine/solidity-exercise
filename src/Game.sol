@@ -19,7 +19,7 @@ contract Game is Ownable {
     string name;
     uint64 hp;
     uint64 damage;
-    uint128 xp;
+    uint256 xp;
     uint8 level;
     bool created;
     bool dead;
@@ -223,18 +223,24 @@ contract Game is Ownable {
     if (bP <= charP) {
       currentBoss.damage = currentBoss.hp;
       currentBoss.dead = true;
-      _uChar.xp += bP / 100;
     } else {
       currentBoss.damage += charP;
-      _uChar.xp += charP / 100;
     }
     bP /= 100;
     if (charP <= bP) {
       _uChar.damage = _uChar.hp;
       _uChar.dead = true;
-      _uChar.xp -= charP / 1000;
     } else {
       _uChar.damage += bP;
+    }
+
+    bool _bossDead = currentBoss.dead;
+    uint32 _bossReward = currentBoss.reward;
+    bool _charDead = _uChar.dead;
+    if ((!_bossDead && !_charDead) || (_bossDead && _charDead)) {
+      _uChar.xp += _getRandomNumber() % _bossReward;
+    } else if ((_bossDead && !_charDead) || (_bossDead && _charDead)) {
+      _uChar.xp += _bossReward;
     }
 
     if (currentBoss.dead) {
