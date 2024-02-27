@@ -1,3 +1,5 @@
+# This is my solution for the following problem (Feature requests #1 and #2 are merged):
+
 # Ledger Solidity exercise
 
 Founded in 2014, Ledger is a leader in security and infrastructure solutions for cryptocurrencies and blockchain applications. Headquartered in Paris, with offices in Vierzon, London, New York, and Singapore, Ledger has a team of 800+ professionals developing products and services to safeguard cryptocurrency assets for individuals and companies.
