@@ -10,7 +10,7 @@ contract GameTest is Test {
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
   Game.Boss private _gujjuBoss =
-    Game.Boss({name: 0, hp: 15_456_835_705_066_572_330, damage: 0, reward: 269_568_558, created: true, dead: false});
+    Game.Boss({name: 0, hp: 15_456_835_705_066_572_330, damage: 0, reward: 269_568_558,  dead: false});
 
   function setUp() public {
     game = new Game(3_211_651_848_984_984_460, 3_211_651_848_984_984_460 * 2);
@@ -84,7 +84,7 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (,, uint256 bossDamage,,, bool bossDead) = game.currentBoss();
+    (,, uint256 bossDamage,, bool bossDead) = game.currentBoss();
 
     assertEq(bossDamage, _char.hp);
     assert(!bossDead);
@@ -123,7 +123,7 @@ contract GameTest is Test {
   // Takes 19 addresses to kill boss
   function _killBoss() public returns (uint160) {
     game.makeNewBoss();
-    (, uint64 bossHp, uint64 damage,,,) = game.currentBoss();
+    (, uint64 bossHp, uint64 damage,,) = game.currentBoss();
     uint64 bossPowerLeft = bossHp - damage;
     uint160 player_index = 0;
     uint256 currentTotal = 0;
@@ -196,7 +196,6 @@ contract GameTest is Test {
       hp: 15_456_835_705_066_572_330,
       damage: 1_019_749_324_495_719_894,
       reward: 269_568_558,
-      created: true,
       dead: false
     });
     _char = Game.Character({
@@ -213,7 +212,7 @@ contract GameTest is Test {
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
-    (, uint256 bossHp, uint256 bossDamage,,, bool bossDead) = game.currentBoss();
+    (, uint256 bossHp, uint256 bossDamage,, bool bossDead) = game.currentBoss();
     assertEq(bossHp - bossDamage, 13_571_905_413_125_798_265);
     assert(!bossDead);
     assertEq(_newChar.hp, 1_019_749_324_495_719_894);

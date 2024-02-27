@@ -11,7 +11,6 @@ contract Game is Ownable {
     uint64 hp;
     uint64 damage;
     uint32 reward;
-    bool created;
     bool dead;
   }
 
@@ -115,7 +114,7 @@ contract Game is Ownable {
     uint16 _name = uint16(_getRandomNumber() % 10_000);
     uint64 _totalPower = _getRandomPower() * 10;
     uint32 _reward = uint32(_getRandomNumber());
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -124,7 +123,7 @@ contract Game is Ownable {
     _revertOnAliveBoss();
     uint64 _totalPower = _getRandomPower() * 10;
     uint32 _reward = uint32(_getRandomNumber());
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -132,14 +131,14 @@ contract Game is Ownable {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
     uint32 _reward = uint32(_getRandomNumber());
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
     emit NewBossCreated(currentBoss);
   }
 
   function _makeNewBoss(uint16 _name, uint64 _totalPower, uint32 _reward) internal {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward, created: true, dead: false});
+    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -148,19 +147,19 @@ contract Game is Ownable {
   }
 
   function _revertOnUninitializedBoss() internal view {
-    if (!currentBoss.created) {
+    if (currentBoss.hp==0) {
       revert BossNotCreated();
     }
   }
 
   function _revertOnAliveBoss() internal view {
-    if (currentBoss.created && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
+    if (currentBoss.hp>0 && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
       revert BossNotDead();
     }
   }
 
   function _revertOnDeadBoss() internal view {
-    if (currentBoss.dead || currentBoss.hp == currentBoss.damage) {
+    if (currentBoss.dead) {
       revert BossIsDead();
     }
   }
