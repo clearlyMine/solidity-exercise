@@ -213,42 +213,42 @@ contract Game is Ownable {
 
   function attackBoss() external {
     _revertOnDeadBoss();
-    Character storage _uChar = characters[msg.sender];
-    _checkIfCharacterIsAvailableToWork(_uChar, msg.sender);
+    Character storage _char = characters[msg.sender];
+    _checkIfCharacterIsAvailableToWork(_char, msg.sender);
     working[msg.sender] = block.number;
-    emit BossAttacked(currentBoss, _uChar, msg.sender);
-    uint64 charP = _uChar.hp - _uChar.damage;
-    uint64 bP = currentBoss.hp - currentBoss.damage;
+    emit BossAttacked(currentBoss, _char, msg.sender);
+    uint64 _characterPowerLeft = _char.hp - _char.damage;
+    uint64 _bossPowerLeft = currentBoss.hp - currentBoss.damage;
 
-    if (bP <= charP) {
+    if (_bossPowerLeft <= _characterPowerLeft) {
       currentBoss.damage = currentBoss.hp;
       currentBoss.dead = true;
     } else {
-      currentBoss.damage += charP;
+      currentBoss.damage += _characterPowerLeft;
     }
-    bP /= 100;
-    if (charP <= bP) {
-      _uChar.damage = _uChar.hp;
-      _uChar.dead = true;
+    _bossPowerLeft /= 100;
+    if (_characterPowerLeft <= _bossPowerLeft) {
+      _char.damage = _char.hp;
+      _char.dead = true;
     } else {
-      _uChar.damage += bP;
+      _char.damage += _bossPowerLeft;
     }
 
     bool _bossDead = currentBoss.dead;
     uint32 _bossReward = currentBoss.reward;
-    bool _charDead = _uChar.dead;
+    bool _charDead = _char.dead;
     if ((!_bossDead && !_charDead) || (_bossDead && _charDead)) {
-      _uChar.xp += _getRandomNumber() % _bossReward;
+      _char.xp += _getRandomNumber() % _bossReward;
     } else if ((_bossDead && !_charDead) || (_bossDead && _charDead)) {
-      _uChar.xp += _bossReward;
+      _char.xp += _bossReward;
     }
 
     if (currentBoss.dead) {
-      emit BossKilled(msg.sender);
+      emit BossKilled(currentBoss, msg.sender);
       emit CanClaimReward(msg.sender);
       canClaimReward[msg.sender] = TRUE;
     }
-    _changeCharacterLevel(_uChar);
+    _changeCharacterLevel(_char);
   }
 
   function _changeCharacterLevel(Character storage _char) private {
