@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 import {Game} from "../src/Game.sol";
+import {IBaycToken} from "../src/IBaycToken.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract GameTest is Test {
@@ -623,5 +624,38 @@ contract GameTest is Test {
     vm.expectRevert(abi.encodeWithSelector(Game.NotEnoughXp.selector, address(1)));
     game.healCharacter(address(2), 1_730_191_093_711_958_967 + 1);
     vm.stopPrank();
+  }
+
+  function testNewBossIsAddedToBossList() public {
+    _killBoss(game);
+    vm.roll(53);
+    game.makeNewBoss();
+    uint16[] memory _bosses = game.getAllBossNames();
+    assertEq(_bosses.length, 2);
+    assertEq(_bosses[0], _defaultBoss.name);
+  }
+
+  function testGetAllBosses() public {
+    uint16[] memory _bosses = game.getAllBossNames();
+    assertEq(_bosses.length, 1);
+    assertEq(_bosses[0], _defaultBoss.name);
+  }
+
+  function testGetBossURI() public {
+    vm.mockCall(
+      0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D,
+      abi.encodeWithSelector(IBaycToken.tokenURI.selector, 7301),
+      abi.encode("ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/7310")
+    );
+    assertEq(game.getBossURI(7301), "ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/7310");
+  }
+
+  function testGetCurrentBossURI() public {
+    vm.mockCall(
+      0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D,
+      abi.encodeWithSelector(IBaycToken.tokenURI.selector, 7310),
+      abi.encode("ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/7310")
+    );
+    assertEq(game.getCurrentBossURI(), "ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/7310");
   }
 }

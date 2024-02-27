@@ -26,8 +26,12 @@ contract Game is Ownable {
 
   uint8 private constant FALSE = 1;
   uint8 private constant TRUE = 2;
+
+  uint16[] public bossesHistory;
+
   uint128 public level2Points = 0;
   uint128 public level3Points = 0;
+
   Boss public currentBoss;
   mapping(address userAddress => Character usersCharacter) public characters;
   mapping(address userAddress => uint256 blockNumber) private working;
@@ -147,7 +151,21 @@ contract Game is Ownable {
 
   function _makeNewBossWithoutChecks(uint16 _name, uint64 _hp, uint32 _reward) private {
     currentBoss = Boss({name: _name, hp: _hp, damage: 0, reward: _reward, dead: false});
+    bossesHistory.push(_name);
     emit NewBossCreated(currentBoss);
+  }
+
+  function getCurrentBossURI() external view returns (string memory) {
+    return baycContract.tokenURI(currentBoss.name);
+  }
+
+  ///Letting all bosses be enquired let's the DAPP able to predict all the future boss's attributes
+  function getBossURI(uint16 tokenId) external view returns (string memory) {
+    return baycContract.tokenURI(tokenId);
+  }
+
+  function getAllBossNames() external view returns (uint16[] memory) {
+    return bossesHistory;
   }
 
   function _revertOnInvalidBossName(uint16 _name) private pure {
