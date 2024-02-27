@@ -24,8 +24,8 @@ contract Game is Ownable {
     bool dead;
   }
 
-  uint8 internal constant FALSE = 1;
-  uint8 internal constant TRUE = 2;
+  uint8 private constant FALSE = 1;
+  uint8 private constant TRUE = 2;
   uint128 public level2Points = 0;
   uint128 public level3Points = 0;
   Boss public currentBoss;
@@ -109,24 +109,24 @@ contract Game is Ownable {
     _makeNewBoss(_name, _hp, _reward);
   }
 
-  function _makeNewBoss() internal {
+  function _makeNewBoss() private {
     _revertOnAliveBoss();
     _makeNewBossWithoutChecks();
   }
 
-  function _makeNewBoss(uint16 _name) internal {
+  function _makeNewBoss(uint16 _name) private {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
     _makeNewBossWithoutChecks(_name);
   }
 
-  function _makeNewBoss(uint16 _name, uint64 _hp) internal {
+  function _makeNewBoss(uint16 _name, uint64 _hp) private {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
     _makeNewBossWithoutChecks(_name, _hp);
   }
 
-  function _makeNewBoss(uint16 _name, uint64 _hp, uint32 _reward) internal {
+  function _makeNewBoss(uint16 _name, uint64 _hp, uint32 _reward) private {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
     _makeNewBossWithoutChecks(_name, _hp, _reward);
@@ -153,19 +153,19 @@ contract Game is Ownable {
     require(_name >= 0 && _name < 10_000, "Name has to be in the range 0-9,999, as BAYC only has 10,000 NFTs");
   }
 
-  function _revertOnUninitializedBoss() internal view {
+  function _revertOnUninitializedBoss() private view {
     if (currentBoss.hp == 0) {
       revert BossNotCreated();
     }
   }
 
-  function _revertOnAliveBoss() internal view {
+  function _revertOnAliveBoss() private view {
     if (currentBoss.hp > 0 && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
       revert BossNotDead();
     }
   }
 
-  function _revertOnDeadBoss() internal view {
+  function _revertOnDeadBoss() private view {
     if (currentBoss.dead) {
       revert BossIsDead();
     }
@@ -200,7 +200,7 @@ contract Game is Ownable {
     return ch;
   }
 
-  function _checkIfCharacterIsAvailableToWork(Character memory _toCheck, address adr) internal view {
+  function _checkIfCharacterIsAvailableToWork(Character memory _toCheck, address adr) private view {
     _revertOnCharacterNotCreated(_toCheck);
     if (_toCheck.dead) {
       revert CharacterIsDead(msg.sender);
@@ -210,7 +210,7 @@ contract Game is Ownable {
     }
   }
 
-  function _revertOnCharacterNotCreated(Character memory _toCheck) internal view {
+  function _revertOnCharacterNotCreated(Character memory _toCheck) private view {
     if (!_toCheck.created) {
       revert CharacterNotCreated(msg.sender);
     }
@@ -350,7 +350,7 @@ contract Game is Ownable {
     emit CastFireballSpell(_ownCharacter);
   }
 
-  function _getRandomPower() internal view returns (uint64) {
+  function _getRandomPower() private view returns (uint64) {
     return uint64(_getRandomNumber()) / 10;
   }
 
