@@ -143,7 +143,7 @@ contract Game is Ownable {
   }
 
   function _revertOnInvalidBossName(uint16 _name) private pure {
-    require(_name >= 0 && _name < 10_000, "Name has to be in the range 0-9_999");
+    require(_name >= 0 && _name < 10_000, "Name has to be in the range 0-9,999, as BAYC only has 10,000 NFTs");
   }
 
   function _revertOnUninitializedBoss() internal view {
