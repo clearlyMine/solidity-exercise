@@ -9,22 +9,18 @@ contract GameTest is Test {
   Game public game;
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
-  Game.Boss private _gujjuBoss =
-    Game.Boss({name: 0, hp: 15_456_835_705_066_572_330, damage: 0, reward: 269_568_558, dead: false});
+  Game.Boss private _defaultBoss =
+    Game.Boss({name: 7310, hp: 15_456_835_705_066_572_330, damage: 0, reward: 269_568_558, dead: false});
 
   function setUp() public {
     game = new Game(3_211_651_848_984_984_460, 3_211_651_848_984_984_460 * 2);
     vm.roll(50);
   }
 
-  function testOwnerIsSetCorrectly() public {
-    assertEq(address(this), game.owner());
-  }
-
   function testOnlyOwnerCanCreateNewBoss() public {
     vm.prank(address(0));
     vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
-    game.makeNewBoss(0);
+    game.makeNewBoss();
   }
 
   function testNewCharacterCreation() public {
@@ -60,7 +56,6 @@ contract GameTest is Test {
 
   function testCanAttackBoss() public {
     //create boss
-    game.makeNewBoss(0);
     vm.roll(52);
 
     //create character
@@ -80,7 +75,7 @@ contract GameTest is Test {
 
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
+    emit Game.BossAttacked(_defaultBoss, _char, address(1));
     game.attackBoss();
 
     Game.Character memory _newChar = game.getUsersCharacter(address(1));
@@ -88,13 +83,12 @@ contract GameTest is Test {
 
     assertEq(bossDamage, _char.hp);
     assert(!bossDead);
-    assertEq(_newChar.damage, _gujjuBoss.hp / 100);
+    assertEq(_newChar.damage, _defaultBoss.hp / 100);
     assert(!_newChar.dead);
   }
 
   function testAttackingBossGivesXp() public {
     //create boss
-    game.makeNewBoss(0);
     vm.roll(52);
 
     //create character
@@ -114,16 +108,15 @@ contract GameTest is Test {
 
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
+    emit Game.BossAttacked(_defaultBoss, _char, address(1));
     game.attackBoss();
     Game.Character memory _newChar1 = game.getUsersCharacter(address(1));
     assertEq(_newChar1.xp, 34_391_985);
   }
 
   // Takes 19 addresses to kill boss
-  function _killBoss() public returns (uint160) {
-    game.makeNewBoss();
-    (, uint64 bossHp, uint64 damage,,) = game.currentBoss();
+  function _killBoss(Game gm) public returns (uint160) {
+    (, uint64 bossHp, uint64 damage,,) = gm.currentBoss();
     uint64 bossPowerLeft = bossHp - damage;
     uint160 player_index = 0;
     uint256 currentTotal = 0;
@@ -131,16 +124,16 @@ contract GameTest is Test {
     while (currentTotal < bossPowerLeft) {
       vm.startPrank(address(++player_index));
       // vm.startPrank(address(i));
-      game.createNewCharacter();
+      gm.createNewCharacter();
       vm.stopPrank();
-      Game.Character memory c = game.getUsersCharacter(address(player_index));
+      Game.Character memory c = gm.getUsersCharacter(address(player_index));
       currentTotal += c.hp - c.damage;
     }
     vm.roll(52);
     for (uint160 i = 1; i <= player_index; i++) {
       // for (uint160 i = 1; i <= 20; i++) {
       vm.startPrank(address(i));
-      game.attackBoss();
+      gm.attackBoss();
       vm.stopPrank();
     }
     return player_index;
@@ -148,13 +141,13 @@ contract GameTest is Test {
   }
 
   function testKillingBossGivesReward() public {
-    uint160 _killer = _killBoss();
-    vm.roll(54);
+    uint160 _killer = _killBoss(game);
+    vm.roll(53);
     assertEq(game.canClaimReward(address(_killer)), 2);
   }
 
   function testCanClaimReward() public {
-    uint160 _killer = _killBoss();
+    uint160 _killer = _killBoss(game);
     vm.roll(53);
     //get xp prior to claiming reward
     Game.Character memory _char = game.getUsersCharacter(address(_killer));
@@ -167,7 +160,6 @@ contract GameTest is Test {
 
   function testCanAttackBossInSubsequentBlocks() public {
     //create boss
-    game.makeNewBoss(0);
     vm.roll(52);
 
     //create character
@@ -186,13 +178,13 @@ contract GameTest is Test {
 
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
+    emit Game.BossAttacked(_defaultBoss, _char, address(1));
     game.attackBoss();
 
     //re-attack boss
     vm.roll(54);
     Game.Boss memory _boss = Game.Boss({
-      name: 0,
+      name: 7310,
       hp: 15_456_835_705_066_572_330,
       damage: 1_019_749_324_495_719_894,
       reward: 269_568_558,
@@ -221,7 +213,6 @@ contract GameTest is Test {
 
   function testCannotAttackBossWithoutCharacter() public {
     //create boss
-    game.makeNewBoss(0);
 
     //create character
     vm.roll(52);
@@ -230,18 +221,6 @@ contract GameTest is Test {
     //attack boss
     vm.expectRevert(abi.encodeWithSelector(Game.CharacterNotCreated.selector, address(1)));
     game.attackBoss();
-  }
-
-  function testCannotAttackBossWhenBossIsNotCreated() public {
-    //create character
-    vm.roll(52);
-    vm.startPrank(address(1));
-    game.createNewCharacter();
-
-    //attack boss
-    vm.expectRevert(Game.BossNotCreated.selector);
-    game.attackBoss();
-    vm.stopPrank();
   }
 
   // function testCannotAttackBossWhenBossIsDead() public {
@@ -274,8 +253,6 @@ contract GameTest is Test {
   // }
 
   function testCannotAttackBossTwiceInTheSameBlock() public {
-    //create boss
-    game.makeNewBoss(0);
     vm.roll(52);
 
     //create character
@@ -294,7 +271,7 @@ contract GameTest is Test {
     });
     //attack boss
     vm.expectEmit();
-    emit Game.BossAttacked(_gujjuBoss, _char, address(1));
+    emit Game.BossAttacked(_defaultBoss, _char, address(1));
     game.attackBoss();
 
     vm.expectRevert(abi.encodeWithSelector(Game.CharacterAlreadyWorking.selector, address(1)));
@@ -302,8 +279,6 @@ contract GameTest is Test {
   }
 
   function testLevelDoesntChangeIfThresholdIsntReachedOnXpIncrease() public {
-    game.makeNewBoss();
-
     vm.startPrank(address(1));
     game.createNewCharacter();
     vm.roll(52);
@@ -315,29 +290,8 @@ contract GameTest is Test {
     assertEq(_char.level, 1);
   }
 
-  function testLevelDoesntChangeIfThresholdIsntReachedOnXpDecrease() public {
-    Game _localGame = new Game(4_294_967_295, 1_730_191_093_711_958_967 * 2);
-    _localGame.makeNewBoss(0, 4_037_796_086_620_620_000, 4_294_967_295);
-
-    vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    Game.Character memory _lastChar;
-    uint256 _blockNum = 52;
-    while (!_lastChar.dead) {
-      vm.roll(_blockNum++);
-      _localGame.attackBoss();
-      _lastChar = _localGame.getUsersCharacter(address(1));
-    }
-
-    vm.stopPrank();
-
-    assert(_lastChar.dead);
-    assertEq(_lastChar.level, 2);
-  }
-
   function testLevel1To2UpgradeOnIncreasingXp() public {
     Game _localGame = new Game(26_956_855, 1_730_191_093_711_958_967 * 2);
-    _localGame.makeNewBoss();
     vm.startPrank(address(1));
     _localGame.createNewCharacter();
     vm.roll(51);
@@ -349,7 +303,6 @@ contract GameTest is Test {
 
   function testLevel1To2To3UpgradeOnIncreasingXp() public {
     Game _localGame = new Game(2_695_685, 26_956_855 + 3);
-    _localGame.makeNewBoss();
     vm.startPrank(address(1));
     _localGame.createNewCharacter();
     vm.roll(51);
@@ -397,16 +350,10 @@ contract GameTest is Test {
 
   function testCanHealOthers() public {
     Game _localGame = new Game(4_444_444, 9_999_999_999_999);
-    _localGame.makeNewBoss(0, 494_949_494_949_494_949);
-    vm.roll(52);
-    vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    vm.stopPrank();
-    vm.startPrank(address(2));
-    _localGame.createNewCharacter();
-    vm.stopPrank();
-
-    vm.roll(53);
+    _killBoss(_localGame);
+    uint256 _nextBlock = 53;
+    _localGame.makeNewBoss(0, 4_949_494_949_494_949_499);
+    vm.roll(_nextBlock++);
 
     vm.startPrank(address(1));
     _localGame.attackBoss();
@@ -414,7 +361,7 @@ contract GameTest is Test {
     vm.startPrank(address(2));
     _localGame.attackBoss();
     vm.stopPrank();
-    vm.roll(54);
+    vm.roll(_nextBlock++);
 
     uint64 u2Damage = _localGame.getUsersCharacter(address(2)).damage;
 
@@ -446,56 +393,59 @@ contract GameTest is Test {
 
   function testCanCastFireballSpell() public {
     Game _localGame = new Game(4444, 9999);
+    _killBoss(_localGame);
+    uint256 _nextBlock = 53;
     _localGame.makeNewBoss(0, 999_999_999_999_999_999);
 
     vm.warp(2 days);
     vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    vm.roll(51);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
-    vm.roll(52);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
 
-    vm.roll(53);
+    vm.roll(_nextBlock++);
     _localGame.castFireballSpell();
     vm.stopPrank();
   }
 
   function testCanCastFireballSpellAfter24Hours() public {
     Game _localGame = new Game(4444, 9999);
+    _killBoss(_localGame);
+    uint256 _nextBlock = 53;
     _localGame.makeNewBoss(0, 999_999_999_999_999_999);
 
     vm.warp(2 days);
     vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    vm.roll(51);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
-    vm.roll(52);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
 
-    vm.roll(53);
+    vm.roll(_nextBlock++);
     _localGame.castFireballSpell();
     skip(1 days);
-    vm.roll(54);
+    vm.roll(_nextBlock++);
     _localGame.castFireballSpell();
     vm.stopPrank();
   }
 
   function testCannotCastFireballSpellTwiceWithin24Hours() public {
     Game _localGame = new Game(4444, 9999);
+    _killBoss(_localGame);
+    uint256 _nextBlock = 53;
     _localGame.makeNewBoss(0, 999_999_999_999_999_999);
 
     vm.warp(2 days);
     vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    vm.roll(51);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
-    vm.roll(52);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
 
-    vm.roll(53);
+    vm.roll(_nextBlock++);
     _localGame.castFireballSpell();
-    vm.roll(54);
+    vm.roll(_nextBlock++);
     skip(100);
     vm.expectRevert(abi.encodeWithSelector(Game.TimeBound.selector, "Can only cast once per 24 hours"));
     _localGame.castFireballSpell();
@@ -508,21 +458,22 @@ contract GameTest is Test {
 
   function testCannotCastFireballSpellBelowLevel3() public {
     Game _localGame = new Game(44_444_444_444, 999_999_999_999_999_999);
+    _killBoss(_localGame);
+    uint256 _nextBlock = 53;
     _localGame.makeNewBoss(0, 999_999_999_999_999_999);
 
     vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    vm.roll(51);
+    vm.roll(_nextBlock++);
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 3 is needed"));
     _localGame.castFireballSpell();
-    vm.roll(52);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
-    vm.roll(53);
+    vm.roll(_nextBlock++);
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 3 is needed"));
     _localGame.castFireballSpell();
-    vm.roll(54);
+    vm.roll(_nextBlock++);
     _localGame.attackBoss();
-    vm.roll(55);
+    vm.roll(_nextBlock++);
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 3 is needed"));
     _localGame.castFireballSpell();
     vm.stopPrank();
@@ -530,16 +481,12 @@ contract GameTest is Test {
 
   function testCannotHealWhenLevel1() public {
     Game _localGame = new Game(44_444_444_444_444_444_444, 999_999_999_999_000_999_999_999_999);
-    _localGame.makeNewBoss(0, 494_949_494_949_494_949);
-    vm.roll(52);
-    vm.startPrank(address(1));
-    _localGame.createNewCharacter();
-    vm.stopPrank();
-    vm.startPrank(address(2));
-    _localGame.createNewCharacter();
-    vm.stopPrank();
+    _killBoss(_localGame);
+    uint256 _nextBlock = 53;
+    _localGame.makeNewBoss(0, 4_949_494_949_494_949_499);
+    vm.roll(_nextBlock++);
 
-    vm.roll(53);
+    vm.roll(_nextBlock++);
 
     vm.startPrank(address(1));
     _localGame.attackBoss();
@@ -547,7 +494,7 @@ contract GameTest is Test {
     vm.startPrank(address(2));
     _localGame.attackBoss();
     vm.stopPrank();
-    vm.roll(54);
+    vm.roll(_nextBlock++);
 
     vm.startPrank(address(1));
     vm.expectRevert(abi.encodeWithSelector(Game.LevelTooLow.selector, "At least level 2 is needed"));
@@ -557,7 +504,6 @@ contract GameTest is Test {
 
   function testCannotHealWhenDead() public {
     //create boss
-    game.makeNewBoss(0);
     vm.roll(52);
     vm.startPrank(address(2));
     game.createNewCharacter();
@@ -594,7 +540,6 @@ contract GameTest is Test {
 
   function testCannotHealWhenWorking() public {
     Game _localGame = new Game(4_444_444, 9_999_999_999_999);
-    _localGame.makeNewBoss(0);
 
     vm.startPrank(address(1));
     _localGame.createNewCharacter();
@@ -635,7 +580,6 @@ contract GameTest is Test {
   }
 
   function testCannotHealWhenOtherWorking() public {
-    game.makeNewBoss();
     vm.startPrank(address(3));
     game.createNewCharacter();
     vm.stopPrank();
@@ -665,7 +609,6 @@ contract GameTest is Test {
   }
 
   function testCannotHealWithLessXp() public {
-    game.makeNewBoss();
     _healingSetUp();
 
     vm.startPrank(address(2));

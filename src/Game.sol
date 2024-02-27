@@ -54,9 +54,9 @@ contract Game is Ownable {
   error LevelPointsTooLow(string);
 
   // "Boss is still alive"
-  error BossNotDead();
+  error BossNotDead(Boss boss);
   error BossNotCreated();
-  error BossIsDead();
+  error BossIsDead(Boss boss);
   //  Name cannot be empty
   error EmptyNameSupplied();
   error TimeBound(string);
@@ -64,7 +64,7 @@ contract Game is Ownable {
   event NewCharacterCreated(address indexed creator, Character character);
   event NewBossCreated(Boss boss);
   event BossAttacked(Boss boss, Character attacker, address indexed user);
-  event BossKilled(address indexed);
+  event BossKilled(Boss boss, address indexed killer);
   event CanClaimReward(address indexed);
   event CastFireballSpell(Character);
 
@@ -75,6 +75,7 @@ contract Game is Ownable {
     level2Points = l2p;
     level3Points = l3p;
     baycContract = IBaycToken(baycAddress);
+    _makeNewBossWithoutChecks();
   }
 
   function setLevel2Points(uint128 l2p) external onlyOwner {
@@ -137,7 +138,7 @@ contract Game is Ownable {
   }
 
   function _makeNewBossWithoutChecks(uint16 _name) private {
-    _makeNewBossWithoutChecks(_name,  _getRandomPower() * 10);
+    _makeNewBossWithoutChecks(_name, _getRandomPower() * 10);
   }
 
   function _makeNewBossWithoutChecks(uint16 _name, uint64 _hp) private {
@@ -153,21 +154,15 @@ contract Game is Ownable {
     require(_name >= 0 && _name < 10_000, "Name has to be in the range 0-9,999, as BAYC only has 10,000 NFTs");
   }
 
-  function _revertOnUninitializedBoss() private view {
-    if (currentBoss.hp == 0) {
-      revert BossNotCreated();
-    }
-  }
-
   function _revertOnAliveBoss() private view {
-    if (currentBoss.hp > 0 && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
-      revert BossNotDead();
+    if (!currentBoss.dead) {
+      revert BossNotDead(currentBoss);
     }
   }
 
   function _revertOnDeadBoss() private view {
     if (currentBoss.dead) {
-      revert BossIsDead();
+      revert BossIsDead(currentBoss);
     }
   }
 
@@ -217,7 +212,6 @@ contract Game is Ownable {
   }
 
   function attackBoss() external {
-    _revertOnUninitializedBoss();
     _revertOnDeadBoss();
     Character storage _uChar = characters[msg.sender];
     _checkIfCharacterIsAvailableToWork(_uChar, msg.sender);
@@ -252,7 +246,6 @@ contract Game is Ownable {
     if (currentBoss.dead) {
       emit BossKilled(msg.sender);
       emit CanClaimReward(msg.sender);
-      _makeNewBoss();
       canClaimReward[msg.sender] = TRUE;
     }
     _changeCharacterLevel(_uChar);
