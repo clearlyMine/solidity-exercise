@@ -4,7 +4,6 @@ pragma solidity >=0.8.13;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IBaycToken} from "./IBaycToken.sol";
 
-// TODO: Implement all user stories and one of the feature request
 contract Game is Ownable {
   struct Boss {
     uint16 name;
