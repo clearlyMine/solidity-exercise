@@ -72,8 +72,8 @@ contract Game is Ownable {
   event CanClaimReward(address indexed);
   event CastFireballSpell(Character);
 
-  address baycAddress = 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
-  IBaycToken baycContract;
+  address public baycAddress = 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
+  IBaycToken private baycContract;
 
   constructor(uint128 l2p, uint128 l3p) Ownable(msg.sender) {
     level2Points = l2p;
@@ -169,7 +169,9 @@ contract Game is Ownable {
   }
 
   function _revertOnInvalidBossName(uint16 _name) private pure {
-    require(_name >= 0 && _name < 10_000, "Name has to be in the range 0-9,999, as BAYC only has 10,000 NFTs");
+    if (_name >= 10_000) {
+      revert InvalidInput("Name has to be in the range 0-9,999, as BAYC only has 10,000 NFTs");
+    }
   }
 
   function _revertOnAliveBoss() private view {

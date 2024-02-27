@@ -119,25 +119,25 @@ contract GameTest is Test {
   function _killBoss(Game gm) public returns (uint160) {
     (, uint64 bossHp, uint64 damage,,) = gm.currentBoss();
     uint64 bossPowerLeft = bossHp - damage;
-    uint160 player_index = 0;
+    uint160 _playerIndex = 0;
     uint256 currentTotal = 0;
     // for (uint160 i = 1; i <= 20; i++) {
     while (currentTotal < bossPowerLeft) {
-      vm.startPrank(address(++player_index));
+      vm.startPrank(address(++_playerIndex));
       // vm.startPrank(address(i));
       gm.createNewCharacter();
       vm.stopPrank();
-      Game.Character memory c = gm.getUsersCharacter(address(player_index));
+      Game.Character memory c = gm.getUsersCharacter(address(_playerIndex));
       currentTotal += c.hp - c.damage;
     }
     vm.roll(52);
-    for (uint160 i = 1; i <= player_index; i++) {
+    for (uint160 i = 1; i <= _playerIndex; i++) {
       // for (uint160 i = 1; i <= 20; i++) {
       vm.startPrank(address(i));
       gm.attackBoss();
       vm.stopPrank();
     }
-    return player_index;
+    return _playerIndex;
     // return 19;
   }
 
