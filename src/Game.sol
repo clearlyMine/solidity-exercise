@@ -101,44 +101,51 @@ contract Game is Ownable {
     _makeNewBoss(_name);
   }
 
-  function makeNewBoss(uint16 _name, uint64 _totalPower) external onlyOwner {
-    _makeNewBoss(_name, _totalPower);
+  function makeNewBoss(uint16 _name, uint64 _hp) external onlyOwner {
+    _makeNewBoss(_name, _hp);
   }
 
-  function makeNewBoss(uint16 _name, uint64 _totalPower, uint32 _reward) external onlyOwner {
-    _makeNewBoss(_name, _totalPower, _reward);
+  function makeNewBoss(uint16 _name, uint64 _hp, uint32 _reward) external onlyOwner {
+    _makeNewBoss(_name, _hp, _reward);
   }
 
   function _makeNewBoss() internal {
     _revertOnAliveBoss();
-    uint16 _name = uint16(_getRandomNumber() % 10_000);
-    uint64 _totalPower = _getRandomPower() * 10;
-    uint32 _reward = uint32(_getRandomNumber());
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
-    emit NewBossCreated(currentBoss);
+    _makeNewBossWithoutChecks();
   }
 
   function _makeNewBoss(uint16 _name) internal {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
-    uint64 _totalPower = _getRandomPower() * 10;
-    uint32 _reward = uint32(_getRandomNumber());
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
-    emit NewBossCreated(currentBoss);
+    _makeNewBossWithoutChecks(_name);
   }
 
-  function _makeNewBoss(uint16 _name, uint64 _totalPower) internal {
+  function _makeNewBoss(uint16 _name, uint64 _hp) internal {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
-    uint32 _reward = uint32(_getRandomNumber());
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
-    emit NewBossCreated(currentBoss);
+    _makeNewBossWithoutChecks(_name, _hp);
   }
 
-  function _makeNewBoss(uint16 _name, uint64 _totalPower, uint32 _reward) internal {
+  function _makeNewBoss(uint16 _name, uint64 _hp, uint32 _reward) internal {
     _revertOnInvalidBossName(_name);
     _revertOnAliveBoss();
-    currentBoss = Boss({name: _name, hp: _totalPower, damage: 0, reward: _reward,  dead: false});
+    _makeNewBossWithoutChecks(_name, _hp, _reward);
+  }
+
+  function _makeNewBossWithoutChecks() private {
+    _makeNewBossWithoutChecks(uint16(_getRandomNumber() % 10_000));
+  }
+
+  function _makeNewBossWithoutChecks(uint16 _name) private {
+    _makeNewBossWithoutChecks(_name,  _getRandomPower() * 10);
+  }
+
+  function _makeNewBossWithoutChecks(uint16 _name, uint64 _hp) private {
+    _makeNewBossWithoutChecks(_name, _hp, uint32(_getRandomNumber()));
+  }
+
+  function _makeNewBossWithoutChecks(uint16 _name, uint64 _hp, uint32 _reward) private {
+    currentBoss = Boss({name: _name, hp: _hp, damage: 0, reward: _reward, dead: false});
     emit NewBossCreated(currentBoss);
   }
 
@@ -147,13 +154,13 @@ contract Game is Ownable {
   }
 
   function _revertOnUninitializedBoss() internal view {
-    if (currentBoss.hp==0) {
+    if (currentBoss.hp == 0) {
       revert BossNotCreated();
     }
   }
 
   function _revertOnAliveBoss() internal view {
-    if (currentBoss.hp>0 && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
+    if (currentBoss.hp > 0 && !currentBoss.dead && currentBoss.hp > currentBoss.damage) {
       revert BossNotDead();
     }
   }

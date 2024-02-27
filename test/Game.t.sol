@@ -10,7 +10,7 @@ contract GameTest is Test {
   string[] public characterNames =
     ["Anya", "Taylor", "Joy", "Joseph", "Gordon", "Lewitt", "Batman", "Superman", "Spiderman", "Ironman"];
   Game.Boss private _gujjuBoss =
-    Game.Boss({name: 0, hp: 15_456_835_705_066_572_330, damage: 0, reward: 269_568_558,  dead: false});
+    Game.Boss({name: 0, hp: 15_456_835_705_066_572_330, damage: 0, reward: 269_568_558, dead: false});
 
   function setUp() public {
     game = new Game(3_211_651_848_984_984_460, 3_211_651_848_984_984_460 * 2);
